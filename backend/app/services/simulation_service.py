@@ -6,6 +6,7 @@ from app.models.battery import BatteryReading
 from app.models.energy import EnergyConsumption
 from app.models.charging import ChargingSession
 from app.models.diagnostics import VehicleDiagnostic
+from app.models.vehicle_telemetry import VehicleTelemetryState
 
 
 SAMPLE_EV_PROFILES = [
@@ -247,6 +248,44 @@ def seed_sample_ev_datasets(db, user_id: int) -> List[Vehicle]:
                     detected_at=now - timedelta(days=2)
                 ))
 
+            db.commit()
+
+        # Seed or ensure telemetry state exists
+        t_state = db.query(VehicleTelemetryState).filter(VehicleTelemetryState.vehicle_id == vehicle.id).first()
+        if not t_state:
+            t_state = VehicleTelemetryState(
+                vehicle_id=vehicle.id,
+                tpms_fl_psi=36.0,
+                tpms_fr_psi=35.8,
+                tpms_rl_psi=36.2,
+                tpms_rr_psi=36.0,
+                tpms_fl_temp_c=31.5,
+                tpms_fr_temp_c=32.0,
+                tpms_rl_temp_c=31.2,
+                tpms_rr_temp_c=31.8,
+                tpms_status="normal",
+                door_front_left=False,
+                door_front_right=False,
+                door_rear_left=False,
+                door_rear_right=False,
+                trunk_open=False,
+                frunk_open=False,
+                charge_port_open=False,
+                doors_locked=True,
+                vehicle_speed_kmh=0.0,
+                seat_driver_occupied=True,
+                seat_driver_belt=True,
+                seat_passenger_occupied=False,
+                seat_passenger_belt=False,
+                climate_power=True,
+                target_temp_c=22.0,
+                cabin_temp_c=23.0,
+                fan_speed=2,
+                air_circulation="fresh_air",
+                ac_mode="auto",
+                defrost_active=False
+            )
+            db.add(t_state)
             db.commit()
 
         created_vehicles.append(vehicle)

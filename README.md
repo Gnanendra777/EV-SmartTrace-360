@@ -7,6 +7,22 @@ An enterprise-grade, full-stack, AI-powered Electric Vehicle Intelligence and Fl
 
 ## ⚡ Key Highlights & Capabilities
 
+- 🚗 **Interactive 360° 3D Vehicle Digital Twin**: Built with Three.js and OrbitControls. Full 360-degree rotation, zoom, camera perspective shortcuts (Front, Rear, Left, Right, Top, Interior), and an X-Ray / Cutaway mode revealing 8 interactive subsystems:
+  1. *High-Voltage Battery Pack & Modules* (SOC, SOH, cell delta, thermal management)
+  2. *Permanent Magnet Traction Motor & Inverter*
+  3. *Tyre Pressure Monitoring System (TPMS)* (FL, FR, RL, RR wheel pressures)
+  4. *Electro-Hydraulic & Regenerative Braking System*
+  5. *Cooling Loop & Active Thermal Management*
+  6. *Power Electronics & 12V Auxiliary DC-DC Bus*
+  7. *High-Power Charging Port & Motorized Flap*
+  8. *Doors, Trunk & Seat-Belt Restraint Safety Network*
+- 🛞 **Tyre Pressure Monitoring System (TPMS)**: Direct 4-wheel visualizer displaying live individual tyre pressures (PSI/kPa), temperatures, normal/warning/critical health states, and automated inflation recommendations.
+- ❄️ **Cabin Climate Control & Hardware Actuation**: Remote AC power on/off, precise target temperature control (16°C to 30°C), 5-level fan blower speeds, and fresh air vs. recirculation switching with immediate CAN-bus telemetry execution.
+- 🔒 **Doors, Trunk & Seatbelt Restraint Monitoring**: Latch proximity monitoring, remote door locking/unlocking, motorized trunk and charge port flap controls, and occupant seat-belt buckle detection.
+- 🛡️ **Critical Safety Interlock Layer**:
+  - Autonomous steering, acceleration, and friction braking actuation via SmartVoice or remote API are **strictly prohibited** for passenger safety.
+  - Door unlocking or opening is **automatically blocked** while the vehicle is in motion (`vehicle_speed > 0 km/h`).
+- 🎙️ **Multilingual SmartVoice Voice Vehicle Control**: Siri-style cockpit voice assistant supporting voice controls ("Turn on the AC", "Set temperature to 21 degrees", "Check tyre pressure", "Are doors locked?", "Is my vehicle healthy?") natively in **English** and **Telugu (తెలుగు)** with full audio synthesis.
 - 🔋 **Advanced Battery Intelligence**: Real-time State of Charge (SOC), State of Health (SOH), pack voltage, cell imbalance tracking, and Random Forest range predictions with 95% confidence intervals.
 - 🚗 **3 Persistent Sample EV Datasets**:
   1. **City EV**: 40 kWh battery, 70% SOC, 96% SOH, 0.14 kWh/km consumption, 29°C pack temp, ~200 km range.

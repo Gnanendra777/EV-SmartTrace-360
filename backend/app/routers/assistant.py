@@ -16,6 +16,7 @@ from app.schemas.assistant import (
 )
 from app.security.auth import get_current_user
 from app.services.assistant_service import process_smartvoice_query
+from app.routers.vehicle_controls import get_or_create_telemetry
 
 router = APIRouter(prefix="/assistant", tags=["EV SmartVoice AI Assistant"])
 
@@ -42,6 +43,7 @@ def assistant_chat(
     ).all()
 
     stations = db.query(ChargingStation).limit(5).all()
+    telemetry_state = get_or_create_telemetry(db, vehicle)
 
     result = process_smartvoice_query(
         user_message=chat_req.message,
@@ -50,7 +52,9 @@ def assistant_chat(
         active_diagnostics=diagnostics,
         nearby_stations=stations,
         language=chat_req.language or "en",
-        owner_name=current_user.name
+        owner_name=current_user.name,
+        telemetry_state=telemetry_state,
+        db=db
     )
 
     # Save to voice conversation history

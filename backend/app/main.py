@@ -25,7 +25,8 @@ from app.security.auth import get_password_hash
 from app.websocket.telemetry_ws import stream_telemetry
 from app.routers import (
     auth, vehicles, battery, energy, charging, 
-    diagnostics, routes, assistant, notifications, dashboard
+    diagnostics, routes, assistant, notifications, dashboard,
+    vehicle_controls
 )
 
 # Setup logging
@@ -167,6 +168,7 @@ app.include_router(routes.router, prefix=settings.API_V1_PREFIX)
 app.include_router(assistant.router, prefix=settings.API_V1_PREFIX)
 app.include_router(notifications.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
+app.include_router(vehicle_controls.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

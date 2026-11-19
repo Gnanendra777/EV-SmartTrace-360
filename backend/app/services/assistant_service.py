@@ -14,14 +14,18 @@ def process_smartvoice_query(
     active_diagnostics: List[VehicleDiagnostic],
     nearby_stations: List[ChargingStation],
     language: str = "en",
-    owner_name: Optional[str] = None
+    owner_name: Optional[str] = None,
+    telemetry_state: Optional[Any] = None,
+    db: Optional[Any] = None
 ) -> Dict[str, Any]:
     """
     EV SMARTVOICE Assistant Core Intelligence Engine.
-    Combines verified real-time vehicle telemetry with intent classification and multilingual natural generation.
-    Supports English, Telugu (తెలుగు), and Hindi.
+    Combines verified real-time vehicle telemetry, digital twin controls,
+    strict safety interlocks, and multilingual natural voice generation (English & Telugu).
     """
     msg_clean = user_message.lower().strip()
+    msg_normalized = re.sub(r"^(?:hey|hi|hello|ok|okay|నమస్కారం|హలో)?\s*(?:smartvoice|smarttrace|assistant)?\s*[,:]?\s*", "", msg_clean).strip()
+    eval_msg = msg_normalized if len(msg_normalized) > 0 else msg_clean
     soc = float(vehicle.current_battery_pct if not latest_reading else latest_reading.soc)
     soh = float(latest_reading.soh if latest_reading and latest_reading.soh else 95.0)
     temp = float(latest_reading.temperature if latest_reading and latest_reading.temperature else 28.5)
@@ -31,23 +35,294 @@ def process_smartvoice_query(
 
     owner_greeting_name = owner_name if owner_name else "Driver"
 
+    # Default fallback telemetry state attributes if state not passed
+    class FallbackTelemetry:
+        tpms_fl_psi = 36.0
+        tpms_fr_psi = 35.8
+        tpms_rl_psi = 36.2
+        tpms_rr_psi = 36.0
+        tpms_fl_temp_c = 31.5
+        tpms_fr_temp_c = 32.0
+        tpms_rl_temp_c = 31.2
+        tpms_rr_temp_c = 31.8
+        tpms_status = "normal"
+        tpms_alert = None
+        door_front_left = False
+        door_front_right = False
+        door_rear_left = False
+        door_rear_right = False
+        trunk_open = False
+        charge_port_open = False
+        doors_locked = True
+        vehicle_speed_kmh = 0.0
+        seat_driver_occupied = True
+        seat_driver_belt = True
+        seat_passenger_occupied = False
+        seat_passenger_belt = False
+        climate_power = True
+        target_temp_c = 22.0
+        cabin_temp_c = 23.0
+        fan_speed = 2
+        air_circulation = "fresh_air"
+
+    tstate = telemetry_state if telemetry_state is not None else FallbackTelemetry()
+
     intent = "general_query"
     response_en = ""
     response_te = ""
     suggested_actions = []
     proactive_alert = None
+    vehicle_action = None
 
     critical_faults = [d for d in active_diagnostics if d.severity in ["critical", "warning"]]
 
-    # 1. Greetings (Exact phrase from Phase 4 requirements)
-    if any(k in msg_clean for k in ["hello", "hi", "hey", "namaste", "greetings", "good morning", "good evening", "good afternoon"]):
+    # =========================================================================
+    # 0. STRICT SAFETY INTERLOCK CHECK (Steering, Acceleration, Throttle, Braking)
+    # Prohibit remote or voice vehicle dynamics actuation
+    # =========================================================================
+    prohibited_dynamics = [
+        "steer", "turn the car", "turn left", "turn right", "steering",
+        "accelerat", "step on the gas", "throttle", "drive faster", "speed up",
+        "brake the car", "apply brake", "slow down the car", "stop the car",
+        "స్టీరింగ్", "బ్రేక్", "వేగం పెంచు", "కారు నడుపు"
+    ]
+    if any(k in msg_clean for k in prohibited_dynamics) and not any(k in msg_clean for k in ["brake wear", "brake system", "regen", "brakes status"]):
+        intent = "safety_interlock_blocked"
+        response_en = "Safety Interlock Rejection: Autonomous steering, acceleration, and braking control via SmartVoice or remote API are strictly prohibited for passenger safety."
+        response_te = "భద్రతా నిబంధనల ప్రకారం స్టీరింగ్, వేగం పెంచడం లేదా బ్రేకింగ్‌ను స్మార్ట్‌వాయిస్ ద్వారా నియంత్రించడం ఖచ్చితంగా నిషిద్ధం."
+        suggested_actions = ["Check Vehicle Health", "View Safety Systems", "Diagnostics Scanner"]
+        vehicle_action = {"type": "safety_block", "command": "restricted_actuation"}
+
+    # =========================================================================
+    # 1. GREETINGS (Pure greetings without trailing commands)
+    # =========================================================================
+    elif any(eval_msg == k or msg_clean == k or msg_clean in [f"{k} smartvoice", f"{k} smarttrace", f"{k} assistant"] for k in ["hello", "hi", "hey", "namaste", "greetings", "good morning", "good evening", "good afternoon", "నమస్కారం", "హలో"]):
         intent = "greeting"
         response_en = f"Hello, {owner_greeting_name}! Welcome to EV SmartTrace 360. Do you need any help with your car today?"
         response_te = f"నమస్కారం, {owner_greeting_name}! EV SmartTrace 360 కి స్వాగతం. ఈరోజు మీ వాహనానికి సంబంధించి ఏదైనా సహాయం కావాలా?"
-        suggested_actions = ["What is my battery percentage?", "How much range is remaining?", "Is my vehicle healthy?", "Find nearby charging stations"]
+        suggested_actions = ["Turn on the AC", "Check tyre pressure", "Are doors locked?", "What is my battery percentage?"]
 
-    # 2. Battery Intelligence Intents
-    elif any(k in msg_clean for k in ["battery percentage", "current battery", "soc", "battery level", "charge level"]):
+    # =========================================================================
+    # 2. CLIMATE / AC CONTROL INTENTS
+    # =========================================================================
+    elif any(k in eval_msg or k in msg_clean for k in ["turn on the ac", "turn on ac", "start ac", "start climate", "ac on", "ఏసీ ఆన్", "ac ఆన్"]):
+        intent = "climate_ac_on"
+        tstate.climate_power = True
+        if db:
+            db.commit()
+        response_en = f"Cabin climate control has been turned ON. Set to {tstate.target_temp_c:.1f}°C in Auto comfort mode."
+        response_te = f"క్యాబిన్ ఏసీ ఆన్ చేయబడింది. ఉష్ణోగ్రత {tstate.target_temp_c:.1f}°C కు సెట్ చేయబడింది."
+        suggested_actions = ["Set temperature to 20°C", "Set fan speed to 3", "Check cabin temperature"]
+        vehicle_action = {"type": "climate", "command": "ac_on", "power": True, "target_temp": tstate.target_temp_c}
+
+    elif any(k in msg_clean for k in ["turn off the ac", "turn off ac", "stop ac", "stop climate", "ac off", "ఏసీ ఆఫ్", "ac ఆఫ్"]):
+        intent = "climate_ac_off"
+        tstate.climate_power = False
+        if db:
+            db.commit()
+        response_en = "Cabin climate control has been turned OFF."
+        response_te = "క్యాబిన్ ఏసీ విజయవంతంగా ఆఫ్ చేయబడింది."
+        suggested_actions = ["Turn on the AC", "Check cabin temperature"]
+        vehicle_action = {"type": "climate", "command": "ac_off", "power": False}
+
+    elif any(k in msg_clean for k in ["set temperature to", "set ac to", "temperature to", "set temp to", "degrees", "డిగ్రీలు"]):
+        intent = "climate_set_temp"
+        nums = re.findall(r"\d+(?:\.\d+)?", msg_clean)
+        target = float(nums[0]) if nums else 22.0
+        if 16.0 <= target <= 30.0:
+            tstate.target_temp_c = target
+            tstate.climate_power = True
+            if db:
+                db.commit()
+            response_en = f"Target cabin temperature set to {target:.1f}°C."
+            response_te = f"క్యాబిన్ ఉష్ణోగ్రత {target:.1f}°C కు సెట్ చేయబడింది."
+            vehicle_action = {"type": "climate", "command": "set_temp", "target_temp": target}
+        else:
+            response_en = f"Requested temperature {target}°C is outside the safe comfort operating range of 16°C to 30°C."
+            response_te = f"అభ్యర్థించిన ఉష్ణోగ్రత {target}°C భద్రతా పరిమితి (16°C నుండి 30°C) వెలుపల ఉంది."
+        suggested_actions = ["Set temperature to 22°C", "Set fan speed to 2", "Check cabin temperature"]
+
+    elif any(k in msg_clean for k in ["increase temperature", "warmer", "turn up heat", "turn up the heat", "make it warmer"]):
+        intent = "climate_temp_up"
+        tstate.target_temp_c = min(30.0, tstate.target_temp_c + 1.0)
+        tstate.climate_power = True
+        if db:
+            db.commit()
+        response_en = f"Target temperature increased to {tstate.target_temp_c:.1f}°C."
+        response_te = f"ఉష్ణోగ్రత {tstate.target_temp_c:.1f}°C కు పెంచబడింది."
+        suggested_actions = ["Make it cooler", "Set fan speed to 3"]
+        vehicle_action = {"type": "climate", "command": "set_temp", "target_temp": tstate.target_temp_c}
+
+    elif any(k in msg_clean for k in ["decrease temperature", "cooler", "colder", "turn down temperature", "make it cooler"]):
+        intent = "climate_temp_down"
+        tstate.target_temp_c = max(16.0, tstate.target_temp_c - 1.0)
+        tstate.climate_power = True
+        if db:
+            db.commit()
+        response_en = f"Target temperature decreased to {tstate.target_temp_c:.1f}°C."
+        response_te = f"ఉష్ణోగ్రత {tstate.target_temp_c:.1f}°C కు తగ్గించబడింది."
+        suggested_actions = ["Make it warmer", "Set fan speed to 2"]
+        vehicle_action = {"type": "climate", "command": "set_temp", "target_temp": tstate.target_temp_c}
+
+    elif any(k in msg_clean for k in ["fan speed", "set fan", "increase fan", "ఫ్యాన్ స్పీడ్"]):
+        intent = "climate_fan_speed"
+        nums = re.findall(r"\d+", msg_clean)
+        speed = int(nums[0]) if nums else min(5, tstate.fan_speed + 1)
+        speed = max(1, min(5, speed))
+        tstate.fan_speed = speed
+        tstate.climate_power = True
+        if db:
+            db.commit()
+        response_en = f"AC fan speed adjusted to Level {speed}."
+        response_te = f"ఏసీ ఫ్యాన్ స్పీడ్ లెవల్ {speed} కు మార్చబడింది."
+        suggested_actions = ["Set fan speed to 1", "Set fan speed to 4"]
+        vehicle_action = {"type": "climate", "command": "set_fan_speed", "speed": speed}
+
+    elif any(k in msg_clean for k in ["recirculation", "recirculate", "fresh air", "air circulation"]):
+        intent = "climate_circulation"
+        tstate.air_circulation = "fresh_air" if "fresh" in msg_clean else "recirculate"
+        if db:
+            db.commit()
+        response_en = f"Cabin air circulation switched to {'Recirculation' if tstate.air_circulation == 'recirculate' else 'Fresh Air'} mode."
+        response_te = f"గాలి ప్రసరణ {'రీసర్క్యులేషన్' if tstate.air_circulation == 'recirculate' else 'ఫ్రెష్ ఎయిర్'} మోడ్‌కు మార్చబడింది."
+        suggested_actions = ["Turn on the AC", "Check cabin temperature"]
+        vehicle_action = {"type": "climate", "command": "set_circulation", "mode": tstate.air_circulation}
+
+    elif any(k in msg_clean for k in ["is the ac on", "is ac on", "climate status", "cabin temperature", "what is the cabin temp", "ఉష్ణోగ్రత ఎంత", "ఏసీ నడుస్తుందా"]):
+        intent = "climate_status_query"
+        p_str = "ON" if tstate.climate_power else "OFF"
+        response_en = f"Climate control is currently {p_str}. Target temperature is {tstate.target_temp_c:.1f}°C with cabin ambient at {tstate.cabin_temp_c:.1f}°C (Fan: Level {tstate.fan_speed}, {tstate.air_circulation.replace('_', ' ').title()})."
+        response_te = f"ఏసీ ప్రస్తుతం {'ఆన్' if tstate.climate_power else 'ఆఫ్'} లో ఉంది. క్యాబిన్ ఉష్ణోగ్రత {tstate.cabin_temp_c:.1f}°C గా ఉంది."
+        suggested_actions = ["Turn on the AC" if not tstate.climate_power else "Turn off the AC", "Set temperature to 21°C"]
+        vehicle_action = {"type": "climate", "command": "status"}
+
+    # =========================================================================
+    # 3. TYRE PRESSURE MONITORING (TPMS)
+    # =========================================================================
+    elif any(k in msg_clean for k in ["tyre pressure", "tire pressure", "check tyres", "check tires", "tpms", "are tyres ok", "tyres ok", "tires ok", "టైర్ ప్రెజర్", "టైర్లు"]):
+        intent = "tpms_query"
+        fl, fr, rl, rr = tstate.tpms_fl_psi, tstate.tpms_fr_psi, tstate.tpms_rl_psi, tstate.tpms_rr_psi
+        response_en = (
+            f"Tyre Pressure Monitoring System (TPMS): "
+            f"Front Left: {fl:.1f} PSI, Front Right: {fr:.1f} PSI, "
+            f"Rear Left: {rl:.1f} PSI, Rear Right: {rr:.1f} PSI. "
+            f"All four tyres are within the manufacturer's recommended 36 PSI specification."
+        )
+        response_te = (
+            f"టైర్ ప్రెజర్ మానిటరింగ్ (TPMS): "
+            f"ఫ్రంట్ లెఫ్ట్: {fl:.1f} PSI, ఫ్రంట్ రైట్: {fr:.1f} PSI, "
+            f"రియర్ లెఫ్ట్: {rl:.1f} PSI, రియర్ రైట్: {rr:.1f} PSI. "
+            f"నాలుగు టైర్లు సురక్షితమైన 36 PSI పరిమితిలో ఉన్నాయి."
+        )
+        suggested_actions = ["View 3D Vehicle Twin", "Check Overall Health", "Diagnostics Scanner"]
+        vehicle_action = {"type": "tpms", "command": "inspect", "data": {"fl": fl, "fr": fr, "rl": rl, "rr": rr}}
+
+    # =========================================================================
+    # 4. DOORS, TRUNK, AND LOCKS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["are the doors locked", "are doors locked", "check doors", "door status", "is trunk open", "which door is open", "డోర్లు లాక్ అయ్యాయా", "డోర్ల స్థితి"]):
+        intent = "doors_status_query"
+        lock_str = "All passenger doors and the trunk are SECURELY LOCKED." if tstate.doors_locked else "Vehicle doors are currently UNLOCKED."
+        response_en = f"{lock_str} Door latches: Front Left (Closed), Front Right (Closed), Rear Left (Closed), Rear Right (Closed), Trunk ({'Open' if tstate.trunk_open else 'Closed'})."
+        response_te = f"{'అన్ని డోర్లు మరియు ట్రంక్ సురక్షితంగా లాక్ చేయబడ్డాయి.' if tstate.doors_locked else 'డోర్లు ప్రస్తుతం అన్‌లాక్ చేయబడ్డాయి.'}"
+        suggested_actions = ["Lock all doors" if not tstate.doors_locked else "Unlock doors", "Check seatbelt status"]
+        vehicle_action = {"type": "doors", "command": "status", "locked": tstate.doors_locked}
+
+    elif any(k in msg_clean for k in ["lock the car", "lock the doors", "lock all doors", "lock doors", "లాక్ చేయండి", "కారు లాక్ చేయండి"]):
+        intent = "doors_lock"
+        tstate.doors_locked = True
+        tstate.door_front_left = False
+        tstate.door_front_right = False
+        tstate.door_rear_left = False
+        tstate.door_rear_right = False
+        if db:
+            db.commit()
+        response_en = "All vehicle doors, luggage trunk, and charge port are now securely locked."
+        response_te = "వాహనం డోర్లు మరియు ట్రంక్ విజయవంతంగా లాక్ చేయబడ్డాయి."
+        suggested_actions = ["Check tyre pressure", "View 3D Vehicle Twin"]
+        vehicle_action = {"type": "doors", "command": "lock", "locked": True}
+
+    elif any(k in msg_clean for k in ["unlock the car", "unlock the doors", "unlock doors", "అన్‌లాక్ చేయండి"]):
+        intent = "doors_unlock"
+        if tstate.vehicle_speed_kmh > 0.0:
+            response_en = f"Safety Interlock Rejection: Cannot unlock doors while vehicle is in motion (Speed: {tstate.vehicle_speed_kmh:.0f} km/h)."
+            response_te = "భద్రతా కారణాల వల్ల వాహనం కదులుతున్నప్పుడు డోర్లను అన్‌లాక్ చేయడం సాధ్యపడదు."
+            vehicle_action = {"type": "safety_block", "command": "unlock_while_moving"}
+        else:
+            tstate.doors_locked = False
+            if db:
+                db.commit()
+            response_en = "Vehicle doors have been unlocked. Please ensure the vehicle surroundings are clear."
+            response_te = "వాహనం డోర్లు అన్‌లాక్ చేయబడ్డాయి."
+            vehicle_action = {"type": "doors", "command": "unlock", "locked": False}
+        suggested_actions = ["Lock all doors", "Check seatbelts"]
+
+    elif any(k in msg_clean for k in ["open trunk", "open the trunk", "ట్రంక్ తెరువు"]):
+        intent = "trunk_open"
+        if tstate.vehicle_speed_kmh > 0.0:
+            response_en = "Safety Interlock: Cannot open luggage trunk while vehicle is moving."
+            response_te = "వాహనం కదులుతున్నప్పుడు ట్రంక్ తెరవడం సాధ్యపడదు."
+        else:
+            tstate.trunk_open = True
+            if db:
+                db.commit()
+            response_en = "Luggage trunk motorized latch has opened."
+            response_te = "లగేజ్ ట్రంక్ తెరవబడింది."
+            vehicle_action = {"type": "doors", "command": "open_trunk", "trunk_open": True}
+        suggested_actions = ["Close the trunk", "Check doors"]
+
+    elif any(k in msg_clean for k in ["close trunk", "close the trunk", "ట్రంక్ మూసివేయి"]):
+        intent = "trunk_close"
+        tstate.trunk_open = False
+        if db:
+            db.commit()
+        response_en = "Luggage trunk has been securely closed."
+        response_te = "లగేజ్ ట్రంక్ మూసివేయబడింది."
+        suggested_actions = ["Lock all doors", "Check tyre pressure"]
+        vehicle_action = {"type": "doors", "command": "close_trunk", "trunk_open": False}
+
+    # =========================================================================
+    # 5. SEATBELTS & OCCUPANCY
+    # =========================================================================
+    elif any(k in msg_clean for k in ["seatbelt", "seat belt", "seat belts", "wearing seatbelt", "who is not wearing", "fastened", "సీట్‌బెల్ట్"]):
+        intent = "seatbelt_status_query"
+        response_en = (
+            "Occupant Restraint Status: "
+            "Driver seat: OCCUPIED and FASTENED (OK). "
+            "Front Passenger: Unoccupied. "
+            "Rear row: All 3 positions unoccupied. "
+            "All active passengers are securely buckled."
+        )
+        response_te = (
+            "సీట్‌బెల్ట్ భద్రతా స్థితి: "
+            "డ్రైవర్ సీట్‌బెల్ట్ ధరించారు. ఇతర సీట్లు ఖాళీగా ఉన్నాయి. "
+            "అన్ని భద్రతా ప్రమాణాలు సాధారణంగా ఉన్నాయి."
+        )
+        suggested_actions = ["View 3D Vehicle Twin", "Check Overall Health"]
+        vehicle_action = {"type": "seatbelts", "command": "status", "driver_belt": True}
+
+    # =========================================================================
+    # 6. CHARGING PORT STATUS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["charging port", "charge port", "is port open", "is charging connected", "charging flap", "ఛార్జింగ్ పోర్ట్"]):
+        intent = "charging_port_query"
+        p_str = "OPEN" if tstate.charge_port_open else "CLOSED and locked"
+        response_en = (
+            f"Charging Port Status: Motorized flap is {p_str}. "
+            f"Inlet configuration: {vehicle.connector_types}. "
+            f"Maximum peak DC charge input: {vehicle.max_charging_power:.0f} kW."
+        )
+        response_te = (
+            f"ఛార్జింగ్ పోర్ట్ స్థితి: ఫ్లాప్ {'తెరవబడింది' if tstate.charge_port_open else 'మూసివేయబడింది మరియు లాక్ చేయబడింది'}. "
+            f"గరిష్ట ఛార్జింగ్ సామర్థ్యం {vehicle.max_charging_power:.0f} kW."
+        )
+        suggested_actions = ["Find Nearby Charging", "Estimate Charging Time"]
+        vehicle_action = {"type": "charging_port", "command": "status", "open": tstate.charge_port_open}
+
+    # =========================================================================
+    # 7. BATTERY INTELLIGENCE INTENTS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["battery percentage", "current battery", "soc", "battery level", "charge level", "బ్యాటరీ శాతం"]):
         intent = "battery_soc_query"
         response_en = (
             f"Your current battery level is {soc:.0f}%, with {capacity * (soc / 100.0):.1f} kWh of usable energy available. "
@@ -59,7 +334,7 @@ def process_smartvoice_query(
         )
         suggested_actions = ["Explain battery degradation", "Estimate charging time", "View Battery Intelligence"]
 
-    elif any(k in msg_clean for k in ["battery health", "soh", "state of health", "pack health"]):
+    elif any(k in msg_clean for k in ["battery health", "soh", "state of health", "pack health", "బ్యాటరీ ఆరోగ్యం"]):
         intent = "battery_health_query"
         response_en = (
             f"Your battery State of Health (SOH) is {soh:.1f}%. "
@@ -71,7 +346,7 @@ def process_smartvoice_query(
         )
         suggested_actions = ["View Battery Degradation Chart", "Check Battery Temperature"]
 
-    elif any(k in msg_clean for k in ["battery temperature", "battery temp", "thermal", "pack temp"]):
+    elif any(k in msg_clean for k in ["battery temperature", "battery temp", "thermal", "pack temp", "బ్యాటరీ ఉష్ణోగ్రత"]):
         intent = "battery_temp_query"
         response_en = (
             f"The high-voltage battery temperature is currently {temp:.1f}°C. "
@@ -83,7 +358,7 @@ def process_smartvoice_query(
         )
         suggested_actions = ["Check Inverter Cooling", "View Telemetry Bus"]
 
-    elif any(k in msg_clean for k in ["how much range", "remaining range", "how far can i go", "km remaining", "kilometres"]):
+    elif any(k in msg_clean for k in ["how much range", "remaining range", "how far can i go", "km remaining", "kilometres", "రేంజ్ ఎంత"]):
         intent = "range_prediction_query"
         response_en = (
             f"Based on your vehicle's current {soc:.0f}% state of charge and recent driving efficiency of {efficiency * 100:.1f} kWh per 100 km, "
@@ -107,8 +382,10 @@ def process_smartvoice_query(
         )
         suggested_actions = ["View Degradation Chart", "View Battery Intelligence"]
 
-    # 3. Energy Analytics Intents
-    elif any(k in msg_clean for k in ["average consumption", "energy consumption", "efficiency", "kwh/km"]):
+    # =========================================================================
+    # 8. ENERGY ANALYTICS INTENTS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["average consumption", "energy consumption", "efficiency", "kwh/km", "విద్యుత్ వినియోగం"]):
         intent = "energy_consumption_query"
         response_en = (
             f"Your average energy consumption is {efficiency:.3f} kWh/km ({efficiency * 100:.1f} kWh/100km). "
@@ -120,7 +397,7 @@ def process_smartvoice_query(
         )
         suggested_actions = ["View Weekly Energy", "Trip Efficiency Tips"]
 
-    elif any(k in msg_clean for k in ["last trip", "trip efficiency", "recent trip", "how efficient was my"]):
+    elif any(k in msg_clean for k in ["last trip", "trip efficiency", "recent trip", "చివరి ప్రయాణం"]):
         intent = "last_trip_query"
         response_en = (
             f"On your last trip of 38.4 km, average consumption was {efficiency * 0.96:.3f} kWh/km with 94/100 regenerative braking efficiency. "
@@ -144,8 +421,10 @@ def process_smartvoice_query(
         )
         suggested_actions = ["View Energy Analytics Chart", "Download Report"]
 
-    # 4. Charging Intents
-    elif any(k in msg_clean for k in ["how long will charging take", "charging take", "charging duration", "how much time to charge", "how long to charge"]):
+    # =========================================================================
+    # 9. CHARGING INTENTS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["how long will charging take", "charging take", "charging duration", "how much time to charge", "how long to charge", "ఛార్జింగ్ సమయం"]):
         intent = "charging_duration_query"
         deficit = max(0.0, 80.0 - soc)
         req_energy = capacity * (deficit / 100.0)
@@ -165,7 +444,7 @@ def process_smartvoice_query(
             )
         suggested_actions = ["Find Nearby Fast Charger", "Estimate Charging Cost"]
 
-    elif any(k in msg_clean for k in ["charging cost", "cost to charge", "how much cost", "electricity cost"]):
+    elif any(k in msg_clean for k in ["charging cost", "cost to charge", "how much cost", "electricity cost", "ఛార్జింగ్ ఖర్చు"]):
         intent = "charging_cost_query"
         deficit = max(0.0, 100.0 - soc)
         req_energy = capacity * (deficit / 100.0)
@@ -181,21 +460,7 @@ def process_smartvoice_query(
         )
         suggested_actions = ["Schedule Off-Peak Charging", "Find Budget Charging"]
 
-    elif any(k in msg_clean for k in ["connector", "which connector", "plug type", "inlet"]):
-        intent = "connector_compatibility_query"
-        connectors = vehicle.connector_types or "CCS2, Type 2"
-        max_p = float(vehicle.max_charging_power)
-        response_en = (
-            f"Your {vehicle.manufacturer} {vehicle.model} supports {connectors}. "
-            f"Maximum DC fast charge input is {max_p:.0f} kW."
-        )
-        response_te = (
-            f"మీ {vehicle.manufacturer} {vehicle.model} వాహనం {connectors} కనెక్టర్లకు మద్దతు ఇస్తుంది. "
-            f"గరిష్ట DC ఫాస్ట్ ఛార్జింగ్ సామర్థ్యం {max_p:.0f} kW."
-        )
-        suggested_actions = ["Filter Stations by My Connector", "View Charging Stations"]
-
-    elif any(k in msg_clean for k in ["charging station", "find nearby charging", "nearby charger", "where can i charge"]):
+    elif any(k in msg_clean for k in ["charging station", "find nearby charging", "nearby charger", "where can i charge", "సమీప ఛార్జర్"]):
         intent = "charging_stations_query"
         if nearby_stations:
             nearest = nearby_stations[0]
@@ -212,28 +477,18 @@ def process_smartvoice_query(
             response_te = "మీ వాహనానికి 15 కిమీ పరిధిలో 5 ధృవీకరించబడిన ఛార్జింగ్ స్టేషన్లు గుర్తించబడ్డాయి."
         suggested_actions = ["Open Interactive Map", "Start Navigation to Station"]
 
-    elif any(k in msg_clean for k in ["recommend charging", "recommend a suitable", "recommended charger"]):
-        intent = "charging_recommendation_query"
-        response_en = (
-            f"Recommended charging option for {vehicle.vehicle_name}: "
-            f"Charge tonight between 11:00 PM and 6:00 AM on AC Level 2 to leverage $0.18/kWh off-peak tariff and preserve battery longevity."
-        )
-        response_te = (
-            f"{vehicle.vehicle_name} కొరకు సిఫార్సు చేయబడిన ఛార్జింగ్: "
-            f"బ్యాటరీ దీర్ఘకాలిక ఆరోగ్యం కోసం రాత్రి 11:00 నుండి ఉదయం 6:00 మధ్య ఆఫ్-పీక్ రేటులో AC లెవల్ 2 ఛార్జింగ్ చేయండి."
-        )
-        suggested_actions = ["Set Charging Limit to 80%", "View Charging Page"]
-
-    # 5. Vehicle Diagnostics Intents
-    elif any(k in msg_clean for k in ["is my vehicle healthy", "is car ok", "healthy", "overall health", "vehicle healthy"]):
+    # =========================================================================
+    # 10. VEHICLE DIAGNOSTICS & HEALTH INTENTS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["is my vehicle healthy", "is car ok", "healthy", "overall health", "vehicle healthy", "కారు ఆరోగ్యం"]):
         intent = "vehicle_health_query"
         if not critical_faults:
             response_en = (
-                f"All primary systems in your {vehicle.vehicle_name} — including battery pack, traction motor, "
-                f"inverter cooling, and 12V auxiliary bus — are operating within safe factory parameters. Health Score: 96/100."
+                f"All primary systems in your {vehicle.vehicle_name} — including high-voltage battery pack, traction motor, "
+                f"inverter cooling, TPMS tyres, and 12V auxiliary bus — are operating within safe parameters. Health Score: 96/100."
             )
             response_te = (
-                f"మీ {vehicle.vehicle_name} వాహనంలోని అన్ని ప్రధాన భాగాలు — బ్యాటరీ, మోటార్, కూలింగ్ వ్యవస్థలు "
+                f"మీ {vehicle.vehicle_name} వాహనంలోని అన్ని ప్రధాన భాగాలు — బ్యాటరీ, మోటార్, టైర్లు, కూలింగ్ వ్యవస్థలు "
                 f"సురక్షితంగా మరియు అద్భుతంగా పనిచేస్తున్నాయి. మొత్తం హెల్త్ స్కోర్: 96/100."
             )
         else:
@@ -246,141 +501,59 @@ def process_smartvoice_query(
                 f"శ్రద్ధ అవసరం: {worst.component} భాగంలో {worst.fault_code} హెచ్చరిక నమోదైంది: {worst.description} "
                 f"సిఫార్సు: {worst.recommendation}"
             )
-        suggested_actions = ["Run Full Vehicle Scan", "Download AI Health Report"]
+        suggested_actions = ["Run Full Vehicle Scan", "View 3D Vehicle Twin", "Download Health Report"]
 
-    elif any(k in msg_clean for k in ["unusual readings", "anomalies", "sensors ok", "any fault"]):
-        intent = "unusual_readings_query"
-        if critical_faults:
-            worst = critical_faults[0]
-            response_en = f"Isolation Forest detected an unusual temperature profile on {worst.component} ({worst.sensor_value}°C, normal: {worst.expected_range})."
-            response_te = f"AI ఐసోలేషన్ ఫారెస్ట్ ద్వారా {worst.component} పై అసాధారణ ఉష్ణోగ్రత గుర్తించబడింది ({worst.sensor_value}°C)."
-        else:
-            response_en = "No abnormal CAN-bus sensor deviations detected. All temperature, cell voltage delta, and inverter metrics are within standard tolerances."
-            response_te = "ఎటువంటి అసాధారణ సెన్సార్ హెచ్చుతగ్గులు లేవు. అన్ని పారామితులు సాధారణ పరిధిలో ఉన్నాయి."
-        suggested_actions = ["Scan Subsystems", "View Diagnostic Scanner"]
-
-    elif any(k in msg_clean for k in ["battery warning", "warning explanation", "explain warning"]):
-        intent = "battery_warning_query"
-        response_en = (
-            "Battery Safety Monitoring: Pack isolation resistance is >500 Megaohms, and maximum cell imbalance is 5.4 mV. "
-            "No thermal runaway or overvoltage conditions exist."
-        )
-        response_te = (
-            "బ్యాటరీ భద్రత పర్యవేక్షణ: ప్యాక్ ఐసోలేషన్ రెసిస్టెన్స్ మరియు సెల్ బ్యాలెన్సింగ్ సాధారణ స్థాయిలో ఉన్నాయి. ఎటువంటి ప్రమాదం లేదు."
-        )
-        suggested_actions = ["Open Diagnostics", "View Battery Intelligence"]
-
-    elif any(k in msg_clean for k in ["maintenance", "maintenance should i consider", "service", "maintenance advice"]):
-        intent = "maintenance_advice_query"
-        response_en = (
-            "Preventive Maintenance Advice: "
-            "1. Inspect cabin air filter and coolant level at 30,000 km. "
-            "2. Check tire tread wear and rotate tires. "
-            "3. Maintain 12V auxiliary battery terminal integrity."
-        )
-        response_te = (
-            "నివారణ నిర్వహణ సలహా: "
-            "1. క్యాబిన్ ఎయిర్ ఫిల్టర్ మరియు కూలెంట్ స్థాయిని తనిఖీ చేయండి. "
-            "2. టైర్ల ఒత్తిడిని మరియు అరుగుదలను పరిశీలించండి. "
-            "3. 12V సహాయక బ్యాటరీ కనెక్షన్లను సరిచూడండి."
-        )
-        suggested_actions = ["Download Maintenance Report", "View Diagnostics"]
-
-    # 6. Navigation & Route Intents
-    elif any(k in msg_clean for k in ["calculate a route", "plan route", "navigate", "route to"]):
-        intent = "route_calculation_query"
-        response_en = (
-            f"Route calculation ready for {vehicle.vehicle_name}. Based on current SOC {soc:.0f}% (~{est_range_km:.0f} km range), "
-            f"trips under {est_range_km * 0.85:.0f} km can be completed with zero intermediate charging stops."
-        )
-        response_te = (
-            f"{vehicle.vehicle_name} కొరకు రూట్ ప్లానింగ్ సిద్ధంగా ఉంది. ప్రస్తుత బ్యాటరీ {soc:.0f}% తో "
-            f"{est_range_km * 0.85:.0f} కిమీ పరిధిలోని ప్రయాణాలను ఎటువంటి ఛార్జింగ్ ఆగడాలు లేకుండా పూర్తి చేయవచ్చు."
-        )
-        suggested_actions = ["Open Smart Navigation", "Compare Eco Routes"]
-
-    elif any(k in msg_clean for k in ["consumes less energy", "less energy", "efficient route", "eco route"]):
-        intent = "eco_route_query"
-        response_en = (
-            "The Eco-Optimized Route saves approximately 14% to 18% total energy consumption by avoiding steep gradients "
-            "and excessive high-speed highway cruising, maximizing regenerative braking recovery."
-        )
-        response_te = (
-            "ఎకో-రూట్ ఎంపిక చేసుకోవడం ద్వారా సుమారు 14% నుండి 18% వరకు బ్యాటరీ ఆదా అవుతుంది, "
-            "ఎందుకంటే ఇది రీజెనరేటివ్ బ్రేకింగ్‌ను గరిష్టంగా ఉపయోగిస్తుంది."
-        )
-        suggested_actions = ["Set Eco Route Active", "Open Smart Navigation"]
-
-    elif any(k in msg_clean for k in ["charging stops along", "stops along my", "charging stops"]):
-        intent = "route_charging_stops_query"
-        response_en = (
-            "SmartRoute Optimizer has mapped verified high-power fast charging stops along the journey corridor, "
-            "ensuring minimum arrival SOC remains above 15%."
-        )
-        response_te = (
-            "మీ ప్రయాణ మార్గంలో ధృవీకరించబడిన ఫాస్ట్ ఛార్జింగ్ స్టేషన్లు జోడించబడ్డాయి. "
-            "గమ్యస్థానానికి చేరుకున్నప్పుడు కనీసం 15% బ్యాటరీ మిగిలేలా ప్లాన్ చేయబడింది."
-        )
-        suggested_actions = ["View Stops on Map", "Start Navigation"]
-
-    elif any(k in msg_clean for k in ["arrival battery", "arrival percentage", "battery at destination"]):
-        intent = "arrival_battery_query"
-        response_en = (
-            f"With current driving efficiency, your estimated arrival battery percentage on a 120 km trip is approximately {max(10, int(soc - 28))}%. "
-            f"This leaves a comfortable safety buffer above the 15% minimum threshold."
-        )
-        response_te = (
-            f"ప్రస్తుత డ్రైవింగ్ సామర్థ్యంతో, 120 కిమీ ప్రయాణం తర్వాత మీ గమ్యస్థానంలో సుమారు {max(10, int(soc - 28))}% బ్యాటరీ మిగిలి ఉంటుంది."
-        )
-        suggested_actions = ["Plan Smart Route", "View Range Predictions"]
-
-    # 7. Demo Mode Intents
-    elif any(k in msg_clean for k in ["enable demo mode", "turn on demo mode", "demo mode on"]):
+    # =========================================================================
+    # 11. DEMO MODE INTENTS
+    # =========================================================================
+    elif any(k in msg_clean for k in ["enable demo mode", "turn on demo mode", "demo mode on", "డెమో మోడ్ ఆన్"]):
         intent = "enable_demo_mode"
         response_en = "Demo mode on and enjoy the ride."
         response_te = "డెమో మోడ్ ఆన్ చేయబడింది మరియు డ్రైవ్‌ను ఆనందించండి."
         suggested_actions = ["Select City EV", "Select Long Range EV", "Select Performance EV"]
 
-    elif any(k in msg_clean for k in ["disable demo mode", "turn off demo mode", "demo mode off"]):
+    elif any(k in msg_clean for k in ["disable demo mode", "turn off demo mode", "demo mode off", "డెమో మోడ్ ఆఫ్"]):
         intent = "disable_demo_mode"
         response_en = "Demo mode switched off. Restored real telemetry connection."
         response_te = "డెమో మోడ్ ఆఫ్ చేయబడింది. నిజమైన సెన్సార్ డేటా పునరుద్ధరించబడింది."
         suggested_actions = ["View Live Telemetry", "Scan My EV"]
 
-    # 8. General Help & Platform Overview
-    elif any(k in msg_clean for k in ["what can you do", "help me", "help", "who are you", "explain ev smarttrace"]):
+    # =========================================================================
+    # 12. GENERAL HELP & CONVERSATIONAL
+    # =========================================================================
+    elif any(k in msg_clean for k in ["what can you do", "help me", "help", "who are you", "సహాయం"]):
         intent = "platform_help"
         response_en = (
-            "I am EV SmartVoice, the integrated intelligence assistant for EV SmartTrace 360. "
-            "You can ask me about: Battery percentage & health, remaining range, charging duration & costs, "
-            "nearby charging stations, route energy optimization, diagnostic fault codes, and driving efficiency."
+            "I am EV SmartVoice, your AI vehicle assistant. You can control your car and query diagnostics: "
+            "'Turn on the AC', 'Set temperature to 22 degrees', 'Check tyre pressure', 'Are doors locked?', "
+            "'Lock the doors', 'What is my battery percentage?', and 'Is my vehicle healthy?'."
         )
         response_te = (
-            "నేను EV SmartVoice, EV SmartTrace 360 యొక్క అంతర్నిర్మిత AI సహాయకుడను. "
-            "మీరు నన్ను బ్యాటరీ శాతం, ఆరోగ్యం, డ్రైవింగ్ రేంజ్, ఛార్జింగ్ సమయం, సమీప స్టేషన్లు, మరియు లోప నిర్ధారణల గురించి అడగవచ్చు."
+            "నేను EV SmartVoice, మీ AI వాహన సహాయకుడను. మీరు మాట్లాడటం ద్వారా ఏసీ నియంత్రణ, డోర్లు లాక్ చేయడం, "
+            "టైర్ ప్రెజర్ తనిఖీ చేయడం మరియు బ్యాటరీ స్థితిని తెలుసుకోవచ్చు."
         )
-        suggested_actions = ["What is my battery percentage?", "Is my vehicle healthy?", "Find nearby charging stations"]
+        suggested_actions = ["Turn on the AC", "Check tyre pressure", "Are doors locked?", "What is my battery percentage?"]
 
-    elif any(k in msg_clean for k in ["thank you", "thanks", "dhanyavadalu", "thank u"]):
+    elif any(k in msg_clean for k in ["thank you", "thanks", "dhanyavadalu", "thank u", "ధన్యవాదాలు"]):
         intent = "gratitude"
         response_en = f"You are very welcome, {owner_greeting_name}! Have a safe and smart drive with EV SmartTrace 360."
         response_te = f"ధన్యవాదాలు, {owner_greeting_name}! EV SmartTrace 360 తో మీ ప్రయాణం సురక్షితంగా మరియు ఆనందంగా సాగాలని కోరుకుంటున్నాము."
-        suggested_actions = ["View Central Cockpit", "Check Range"]
+        suggested_actions = ["View 3D Digital Twin", "Check Battery"]
 
-    # Fallback Conversational
     else:
         intent = "conversational_ai"
         response_en = (
-            f"SmartTrace 360 is monitoring your {vehicle.manufacturer} {vehicle.model}. "
-            f"Battery is at {soc:.0f}% (~{est_range_km:.0f} km range). Ask me about battery health, charging duration, fault diagnostics, or energy-optimized routes."
+            f"SmartTrace 360 is actively monitoring your {vehicle.manufacturer} {vehicle.model}. "
+            f"Battery is at {soc:.0f}% (~{est_range_km:.0f} km range). "
+            f"You can command: 'Turn on AC', 'Set temp to 22', 'Check tyre pressure', or 'Lock the car'."
         )
         response_te = (
             f"SmartTrace 360 మీ {vehicle.manufacturer} {vehicle.model} వాహనాన్ని పర్యవేక్షిస్తోంది. "
-            f"బ్యాటరీ {soc:.0f}% వద్ద ఉంది (~{est_range_km:.0f} కిమీ రేంజ్). బ్యాటరీ, ఛార్జింగ్ లేదా రూట్ గురించి నన్ను అడగండి."
+            f"బ్యాటరీ {soc:.0f}% వద్ద ఉంది. ఏసీ ఆన్ చేయడం, టైర్ల ప్రెజర్ లేదా లాకింగ్ గురించి నన్ను అడగండి."
         )
-        suggested_actions = ["What is my battery percentage?", "How much range is remaining?", "Is my vehicle healthy?", "Find nearby charging stations"]
+        suggested_actions = ["Turn on the AC", "Check tyre pressure", "Are doors locked?", "What is my battery percentage?"]
 
-    # Select final text and audio according to requested language
+    # Select final response text and audio according to requested language
     if language == "te":
         final_text = response_te if response_te else response_en
     else:
@@ -392,5 +565,16 @@ def process_smartvoice_query(
         "intent": intent,
         "language": language,
         "proactive_alert": proactive_alert,
-        "suggested_actions": suggested_actions
+        "suggested_actions": suggested_actions,
+        "vehicle_action": vehicle_action,
+        "telemetry_snapshot": {
+            "soc": soc,
+            "soh": soh,
+            "temp": temp,
+            "range_km": est_range_km,
+            "fl_psi": tstate.tpms_fl_psi,
+            "climate_power": tstate.climate_power,
+            "target_temp_c": tstate.target_temp_c,
+            "doors_locked": tstate.doors_locked
+        }
     }

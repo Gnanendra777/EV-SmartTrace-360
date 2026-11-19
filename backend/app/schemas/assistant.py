@@ -18,6 +18,7 @@ class AssistantChatResponse(BaseModel):
     proactive_alert: Optional[Dict[str, Any]] = None
     suggested_actions: List[str] = []
     telemetry_snapshot: Optional[Dict[str, Any]] = None
+    vehicle_action: Optional[Dict[str, Any]] = None
 
 
 class FaultExplanationRequest(BaseModel):

@@ -8,6 +8,7 @@ from app.models.routes import RouteHistory, RouteChargingStop
 from app.models.assistant import VoiceConversation
 from app.models.notifications import Notification
 from app.models.predictions import AIPrediction
+from app.models.vehicle_telemetry import VehicleTelemetryState, VehicleCommandLog
 
 __all__ = [
     "User",
@@ -22,4 +23,6 @@ __all__ = [
     "VoiceConversation",
     "Notification",
     "AIPrediction",
+    "VehicleTelemetryState",
+    "VehicleCommandLog",
 ]

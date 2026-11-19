@@ -14,7 +14,9 @@ import {
   Sparkles,
   RefreshCw,
   Sliders,
-  DollarSign
+  DollarSign,
+  Compass,
+  Radio
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -262,6 +264,44 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* 360° Digital Twin Quick Cockpit Preview */}
+      <div className="glass-panel p-6 rounded-2xl border border-cyan-500/25 relative overflow-hidden bg-gradient-to-r from-[#071B22] via-[#09222B] to-[#071B22]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shadow-lg shadow-cyan-500/20">
+              <Compass className="w-6 h-6 animate-spin" style={{ animationDuration: '10s' }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                  360° Vehicle Digital Twin & Cockpit Controls
+                </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  REAL-TIME CAN-BUS
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                Inspect 8 vehicle subsystems in 3D: High-Voltage Battery Pack, Traction Motor, TPMS Tyres, Brakes, Cooling Loop, and Climate.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono text-cyan-300">
+              <Radio className="w-3.5 h-3.5 text-cyan-400" />
+              <span>4 Wheels: 36 PSI Normal</span>
+            </div>
+            <Link
+              to="/diagnostics"
+              className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2 transition-all"
+            >
+              <span>Open 360° 3D Twin</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Visualizations Grid */}

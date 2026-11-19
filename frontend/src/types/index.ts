@@ -227,3 +227,117 @@ export interface DashboardStats {
   notifications: NotificationItem[];
   is_demo_mode: boolean;
 }
+
+export interface TyreState {
+  psi: number;
+  kpa: number;
+  temp_c: number;
+  status: 'normal' | 'warning' | 'critical';
+  alert?: string | null;
+}
+
+export interface TyreStatus {
+  vehicle_id: number;
+  fl: TyreState;
+  fr: TyreState;
+  rl: TyreState;
+  rr: TyreState;
+  tpms_status: 'normal' | 'warning' | 'critical';
+  tpms_alert?: string | null;
+  unit: string;
+  updated_at: string;
+}
+
+export interface DoorStatus {
+  vehicle_id: number;
+  front_left: boolean;
+  front_right: boolean;
+  rear_left: boolean;
+  rear_right: boolean;
+  trunk: boolean;
+  frunk: boolean;
+  charge_port: boolean;
+  locked: boolean;
+  vehicle_speed_kmh: number;
+  safe_to_operate: boolean;
+  updated_at: string;
+}
+
+export interface SeatItem {
+  position: string;
+  occupied: boolean;
+  fastened: boolean;
+  status: 'normal' | 'warning';
+}
+
+export interface SeatbeltStatus {
+  vehicle_id: number;
+  driver: SeatItem;
+  passenger: SeatItem;
+  rear_left: SeatItem;
+  rear_mid: SeatItem;
+  rear_right: SeatItem;
+  all_fastened: boolean;
+  warnings_active: boolean;
+  updated_at: string;
+}
+
+export interface ClimateStatus {
+  vehicle_id: number;
+  power: boolean;
+  target_temp_c: number;
+  cabin_temp_c: number;
+  fan_speed: number;
+  air_circulation: 'fresh_air' | 'recirculate';
+  ac_mode: 'auto' | 'eco' | 'manual';
+  defrost: boolean;
+  updated_at: string;
+}
+
+export interface ComponentHealthDetail {
+  component_id: string;
+  name: string;
+  status: 'normal' | 'warning' | 'critical' | 'unavailable';
+  current_reading: string;
+  temperature_c?: number;
+  voltage_v?: number;
+  severity: string;
+  description: string;
+  recommendation: string;
+  diagnostic_history: string[];
+}
+
+export interface VehicleFullHealth {
+  vehicle_id: number;
+  vehicle_name: string;
+  soc: number;
+  soh: number;
+  pack_voltage: number;
+  pack_temp_c: number;
+  overall_status: string;
+  health_score: number;
+  components: ComponentHealthDetail[];
+  updated_at: string;
+}
+
+export interface VehicleCommandResponse {
+  command: string;
+  status: 'executed' | 'rejected' | 'safety_blocked' | 'confirmation_required';
+  message: string;
+  parameters?: Record<string, any>;
+  safety_checked: boolean;
+  state?: Record<string, any>;
+}
+
+export interface VehicleCommandLog {
+  id: number;
+  vehicle_id: number;
+  command_type: string;
+  parameters?: string;
+  status: string;
+  safety_checked: boolean;
+  safety_reason?: string;
+  response_message: string;
+  initiated_by: string;
+  created_at: string;
+}

@@ -80,15 +80,22 @@ export const SmartVoicePage: React.FC = () => {
   };
 
   const handleSend = async (msg: string) => {
-    if (!msg.trim() || !activeVehicle) return;
+    let cleanMsg = msg.trim();
+    if (!cleanMsg || !activeVehicle) return;
+    let targetLang = language;
+    if (cleanMsg.includes('(Telugu)')) {
+      cleanMsg = cleanMsg.replace('(Telugu)', '').trim();
+      targetLang = 'te';
+      setLanguage('te');
+    }
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    setMessages((prev) => [...prev, { sender: 'user', text: msg, time }]);
+    setMessages((prev) => [...prev, { sender: 'user', text: cleanMsg, time }]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const res = await api.sendAssistantChat(activeVehicle.id, msg, language);
+      const res = await api.sendAssistantChat(activeVehicle.id, cleanMsg, targetLang);
       setMessages((prev) => [...prev, { sender: 'assistant', text: res.response_text, time }]);
       if (res.proactive_alert) {
         setAlertNotice(res.proactive_alert);
@@ -117,20 +124,21 @@ export const SmartVoicePage: React.FC = () => {
   };
 
   const sampleCommands = [
+    "Turn on the AC",
+    "Set temperature to 21 degrees",
+    "What is my tyre pressure?",
+    "Are the doors locked?",
+    "Check seatbelt status",
     "Hello",
     "What is my battery percentage?",
     "What is my battery health?",
     "What is the battery temperature?",
     "How much range is remaining?",
-    "Explain my battery degradation trend",
-    "What is my average energy consumption?",
-    "How long will charging take?",
-    "What is my estimated charging cost?",
-    "Which connector does my vehicle support?",
-    "Find nearby charging stations",
     "Is my vehicle healthy?",
-    "Calculate a route to my destination",
-    "Which route consumes less energy?",
+    "Find nearby charging stations",
+    "How long will charging take?",
+    "AC ఆన్ చేయండి (Telugu)",
+    "టైర్ ప్రెజర్ ఎంత? (Telugu)",
     "Enable Demo Mode"
   ];
 

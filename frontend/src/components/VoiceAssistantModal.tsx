@@ -41,12 +41,13 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
       text: "Hello! Welcome to EV SmartTrace 360. Do you need any help with your car today?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       suggestedActions: [
+        "Turn on the AC",
+        "Check tyre pressure",
+        "Are the doors locked?",
+        "Check seatbelt status",
         "What is my battery percentage?",
-        "What is my battery health?",
-        "How much range is remaining?",
         "Is my vehicle healthy?",
-        "Find nearby charging stations",
-        "How long will charging take?"
+        "AC ఆన్ చేయండి (Telugu)"
       ]
     }
   ]);
@@ -135,8 +136,15 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
   };
 
   const handleSendMessage = async (textToSend: string) => {
-    const trimmed = textToSend.trim();
+    let trimmed = textToSend.trim();
     if (!trimmed || !activeVehicle) return;
+
+    let targetLang = language;
+    if (trimmed.includes('(Telugu)')) {
+      trimmed = trimmed.replace('(Telugu)', '').trim();
+      targetLang = 'te';
+      setLanguage('te');
+    }
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -150,7 +158,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
     setIsLoading(true);
 
     try {
-      const res = await api.sendAssistantChat(activeVehicle.id, trimmed, language);
+      const res = await api.sendAssistantChat(activeVehicle.id, trimmed, targetLang);
 
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),

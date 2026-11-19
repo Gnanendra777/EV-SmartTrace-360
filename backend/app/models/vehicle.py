@@ -30,3 +30,5 @@ class Vehicle(Base):
     diagnostics = relationship("VehicleDiagnostic", back_populates="vehicle", cascade="all, delete-orphan")
     routes = relationship("RouteHistory", back_populates="vehicle", cascade="all, delete-orphan")
     predictions = relationship("AIPrediction", back_populates="vehicle", cascade="all, delete-orphan")
+    telemetry_state = relationship("VehicleTelemetryState", uselist=False, back_populates="vehicle", cascade="all, delete-orphan")
+    command_logs = relationship("VehicleCommandLog", back_populates="vehicle", cascade="all, delete-orphan")
