@@ -626,23 +626,153 @@ export const api = {
       });
       return res.data;
     } catch {
-      let reply = `SmartTrace 360: Battery is at 70% (~227 km range). All powertrain systems are running smoothly.`;
-      if (message.toLowerCase().includes('battery') || message.toLowerCase().includes('percent')) {
-        reply = `Your battery is at 70%, with 42.0 kWh usable energy remaining. Estimated driving range is 227 kilometres.`;
-      } else if (message.toLowerCase().includes('range') || message.toLowerCase().includes('far')) {
-        reply = `You have approximately 227 kilometres of remaining driving range based on your current 0.150 kWh/km driving efficiency.`;
-      } else if (message.toLowerCase().includes('station') || message.toLowerCase().includes('charger')) {
-        reply = `The nearest fast charging station is Supercharge Hub - Silicon Metro (250 kW), 1.8 km away. 8 of 12 stalls available.`;
-      } else if (message.toLowerCase().includes('problem') || message.toLowerCase().includes('fault')) {
-        reply = `Attention: 1 diagnostic warning active on Cooling System (P0A93-00). Inverter cooling loop flow restriction noticed. Inspect at next service.`;
+      const msgLower = message.toLowerCase().trim();
+      let replyEn = "Sorry, I can currently assist with the EV SmartTrace 360 cockpit queries only. Please select one of the Sample Cockpit Queries to continue.";
+      let replyTe = "క్షమించండి, నేను ప్రస్తుతం EV SmartTrace 360 కాక్‌పిట్ ప్రశ్నలకు మాత్రమే సహాయం చేయగలను. దయచేసి కొనసాగించడానికి నమూనా కాక్‌పిట్ ప్రశ్నలలో ఒకదాన్ని ఎంచుకోండి.";
+      let replyHi = "क्षमा करें, मैं वर्तमान में केवल EV SmartTrace 360 कॉकपिट प्रश्नों में ही सहायता कर सकता हूँ। कृपया जारी रखने के लिए नमूना कॉकपिट प्रश्नों में से एक का चयन करें।";
+      let intent = "unsupported_general_query";
+
+      // 1. Hello
+      if (['hello', 'hi', 'hey', 'namaste', 'హలో', 'నమస్కారం', 'नमस्ते'].some(k => msgLower.includes(k))) {
+        intent = "greeting";
+        replyEn = "Hello! Have a nice day. Welcome to EV SmartTrace 360. Do you need any help with your car today?";
+        replyTe = "హలో! మీకు మంచి రోజు కలగాలి. EV SmartTrace 360 కి స్వాగతం. ఈరోజు మీ కారుకు సంబంధించి ఏదైనా సహాయం కావాలా?";
+        replyHi = "नमस्ते! आपका दिन शुभ हो। EV SmartTrace 360 में आपका स्वागत है। क्या आज आपको अपनी कार के लिए कोई सहायता चाहिए?";
       }
+      // 2. What is my battery percentage?
+      else if (['battery percentage', 'battery charge', 'soc', 'percent', 'బ్యాటరీ శాతం', 'बैटरी प्रतिशत'].some(k => msgLower.includes(k))) {
+        intent = "battery_soc_query";
+        replyEn = "Your current battery charge is 70 percent.";
+        replyTe = "మీ ప్రస్తుత బ్యాటరీ ఛార్జ్ 70 శాతం.";
+        replyHi = "आपकी वर्तमान बैटरी चार्ज 70 प्रतिशत है।";
+      }
+      // 3. What is my battery health?
+      else if (['battery health', 'soh', 'state of health', 'బ్యాటరీ ఆరోగ్యం', 'बैटरी स्वास्थ्य'].some(k => msgLower.includes(k))) {
+        intent = "battery_health_query";
+        replyEn = "Your battery health is currently 96 percent. Your battery condition is good.";
+        replyTe = "మీ బ్యాటరీ ఆరోగ్యం ప్రస్తుతం 96 శాతం. మీ బ్యాటరీ పరిస్థితి బాగుంది.";
+        replyHi = "आपकी बैटरी का स्वास्थ्य वर्तमान में 96 प्रतिशत है। आपकी बैटरी की स्थिति अच्छी है।";
+      }
+      // 4. What is the battery temperature?
+      else if (['battery temperature', 'battery temp', 'pack temp', 'thermal', 'బ్యాటరీ ఉష్ణోగ్రత', 'बैटरी तापमान'].some(k => msgLower.includes(k))) {
+        intent = "battery_temp_query";
+        replyEn = "Your battery temperature is currently 29 degrees Celsius.";
+        replyTe = "మీ బ్యాటరీ ఉష్ణోగ్రత ప్రస్తుతం 29 డిగ్రీల సెల్సియస్.";
+        replyHi = "आपकी बैटरी का तापमान वर्तमान में 29 डिग्री सेल्सियस है।";
+      }
+      // 5. How much range is remaining?
+      else if (['range is remaining', 'remaining range', 'how far', 'range', 'మిగిలిన రేంజ్', 'रेंज'].some(k => msgLower.includes(k))) {
+        intent = "range_prediction_query";
+        replyEn = "Your estimated remaining driving range is 200 kilometres.";
+        replyTe = "మీ అంచనా వేసిన మిగిలిన డ్రైవింగ్ రేంజ్ 200 కిలోమీటర్లు.";
+        replyHi = "आपकी अनुमानित शेष ड्राइविंग रेंज 200 किलोमीटर है।";
+      }
+      // 6. Explain my battery degradation trend.
+      else if (['degradation trend', 'battery degradation', 'aging', 'degradation', 'క్షీణత', 'ह्रास'].some(k => msgLower.includes(k))) {
+        intent = "battery_degradation_query";
+        replyEn = "Your battery degradation trend is currently stable at 4.0% total capacity loss. The annual degradation rate remains under 1.2% per year within factory retention standards.";
+        replyTe = "మీ బ్యాటరీ క్షీణత ధోరణి ప్రస్తుతం స్థిరంగా ఉంది, మొత్తం సామర్థ్యం కోల్పోవడం కేవలం 4.0%. వార్షిక క్షీణత రేటు 1.2% కంటే తక్కువగా సాధారణ ఫ్యాక్టరీ ప్రమాణాల పరిధిలో ఉంది.";
+        replyHi = "आपकी बैटरी का ह्रास रुझान वर्तमान में 4.0% कुल क्षमता हानि पर स्थिर है। वार्षिक ह्रास दर फ़ैक्टरी मानकों के अनुसार प्रति वर्ष 1.2% से कम बनी हुई है।";
+      }
+      // 7. What is my average energy consumption?
+      else if (['average energy consumption', 'average consumption', 'consumption', 'kwh/km', 'వినియోగం', 'खपत'].some(k => msgLower.includes(k))) {
+        intent = "energy_consumption_query";
+        replyEn = "Your average energy consumption is 0.140 kWh per kilometre (14.0 kWh per 100 km), demonstrating optimal powertrain efficiency.";
+        replyTe = "మీ సగటు విద్యుత్ వినియోగం కిలోమీటరుకు 0.140 kWh (14.0 kWh/100కిమీ), ఇది సరైన పవర్‌ట్రెయిన్ సామర్థ్యాన్ని చూపుతుంది.";
+        replyHi = "आपकी औसत ऊर्जा खपत 0.140 kWh प्रति किलोमीटर (14.0 kWh प्रति 100 किमी) है, जो इष्टतम पावरट्रेन दक्षता को दर्शाती है।";
+      }
+      // 8. How long will charging take?
+      else if (['how long will charging take', 'charging take', 'charging duration', 'how long to charge', 'సమయం', 'समय'].some(k => msgLower.includes(k))) {
+        intent = "charging_duration_query";
+        replyEn = "Charging from 70% to 80% requires approximately 4.0 kWh. At your vehicle's peak charging rate of 50 kW, this will take approximately 6 minutes.";
+        replyTe = "70% నుండి 80% వరకు ఛార్జ్ చేయడానికి సుమారు 4.0 kWh అవసరం. మీ గరిష్ట 50 kW ఛార్జింగ్ రేటు వద్ద, దీనికి సుమారు 6 నిమిషాలు పడుతుంది.";
+        replyHi = "70% से 80% तक चार्ज करने के लिए लगभग 4.0 kWh की आवश्यकता है। आपके वाहन की अधिकतम 50 kW चार्जिंग दर पर, इसमें लगभग 6 मिनट लगेंगे।";
+      }
+      // 9. What is my estimated charging cost?
+      else if (['estimated charging cost', 'charging cost', 'cost to charge', 'ఖర్చు', 'लागत'].some(k => msgLower.includes(k))) {
+        intent = "charging_cost_query";
+        replyEn = "To charge your battery to 100% requires 12.0 kWh. Estimated cost is $1.92 on residential off-peak rates, or $3.84 at commercial DC fast chargers.";
+        replyTe = "మీ బ్యాటరీని 100% ఛార్జ్ చేయడానికి 12.0 kWh అవసరం. అంచనా వేసిన ఖర్చు నివాస ఆఫ్-పీక్ రేట్లలో $1.92, లేదా వాణిజ్య DC ఫాస్ట్ ఛార్జర్ల వద్ద $3.84.";
+        replyHi = "आपकी बैटरी को 100% चार्ज करने के लिए 12.0 kWh की आवश्यकता है। आवासीय ऑफ-पीक दरों पर अनुमानित लागत $1.92 है, या वाणिज्यिक DC फास्ट चार्जर्स पर $3.84 है।";
+      }
+      // 10. Which connector does my vehicle support?
+      else if (['which connector', 'connector', 'plug type', 'కనెక్టర్', 'कनेक्टर'].some(k => msgLower.includes(k))) {
+        intent = "connector_compatibility_query";
+        replyEn = "Your vehicle supports Type 2, CHAdeMO connectors with a maximum DC fast charging rate of 50 kW.";
+        replyTe = "మీ వాహనం Type 2, CHAdeMO కనెక్టర్లకు మద్దతు ఇస్తుంది, గరిష్టంగా 50 kW DC ఫాస్ట్ ఛార్జింగ్ సామర్థ్యంతో.";
+        replyHi = "आपका वाहन Type 2, CHAdeMO कनेक्टर्स का समर्थन करता है, जिसकी अधिकतम DC फास्ट चार्जिंग दर 50 kW है।";
+      }
+      // 11. Find nearby charging stations.
+      else if (['nearby charging stations', 'charging station', 'nearby charger', 'స్టేషన్', 'स्टेशन'].some(k => msgLower.includes(k))) {
+        intent = "charging_stations_query";
+        replyEn = "Found verified charging stations nearby. The closest is Supercharge Hub - Silicon Metro (Tesla Supercharger) at 101 Tech Blvd, offering 250 kW CCS2 / NACS.";
+        replyTe = "సమీపంలో ధృవీకరించబడిన ఛార్జింగ్ స్టేషన్లు గుర్తించబడ్డాయి. అత్యంత సమీపంలో ఉన్నది Supercharge Hub - Silicon Metro, 250 kW CCS2 / NACS అందిస్తోంది.";
+        replyHi = "आस-पास सत्यापित चार्जिंग स्टेशन मिले हैं। सबसे निकटतम Supercharge Hub - Silicon Metro है, जो 250 kW CCS2 / NACS प्रदान करता है।";
+      }
+      // 12. Is my vehicle healthy?
+      else if (['is my vehicle healthy', 'vehicle healthy', 'car ok', 'healthy', 'ఆరోగ్యం', 'स्वास्थ्य'].some(k => msgLower.includes(k))) {
+        intent = "vehicle_health_query";
+        replyEn = "Subsystem Health Summary: All monitored primary systems including High-Voltage Battery Pack, Traction Motor, TPMS Tyres, and 12V Auxiliary Bus are in good condition. Health score is 96/100.";
+        replyTe = "సబ్‌సిస్టమ్ ఆరోగ్య సారాంశం: హై-వోల్టేజ్ బ్యాటరీ, ట్రాక్షన్ మోటార్, TPMS టైర్లు మరియు 12V సహాయక బస్సుతో సహా అన్ని భాగాలు మంచి స్థితిలో ఉన్నాయి. ఆరోగ్య స్కోర్ 96/100.";
+        replyHi = "सबसिस्टम स्वास्थ्य सारांश: हाई-वोल्टेज बैटरी, ट्रैक्शन मोटर, TPMS टायर और 12V सहायक बस सहित सभी घटक अच्छी स्थिति में हैं। स्वास्थ्य स्कोर 96/100 है।";
+      }
+      // 13. Calculate a route to my destination.
+      else if (['calculate a route', 'calculate route', 'plan route', 'destination', 'రూట్', 'मार्ग', 'रूट'].some(k => msgLower.includes(k))) {
+        intent = "route_calculation_query";
+        replyEn = "Please specify your destination address or city. SmartRoute will calculate the most energy-efficient travel corridor with verified charging stops based on your current battery percentage (70%).";
+        replyTe = "దయచేసి మీ గమ్యస్థానం చిరునామా లేదా నగరాన్ని పేర్కొనండి. మీ ప్రస్తుత బ్యాటరీ శాతం (70%) ఆధారంగా ఛార్జింగ్ ఆగడాలతో కూడిన అత్యంత సమర్థవంతమైన మార్గాన్ని స్మార్ట్‌రూట్ లెక్కిస్తుంది.";
+        replyHi = "कृपया अपने गंतव्य का पता या शहर बताएं। स्मार्टरूट आपके वर्तमान बैटरी प्रतिशत (70%) के आधार पर चार्जिंग स्टॉप के साथ सबसे कुशल मार्ग की गणना करेगा।";
+      }
+      // 14. Which route consumes less energy?
+      else if (['which route consumes less energy', 'consumes less energy', 'eco route', 'తక్కువ విద్యుత్', 'कम ऊर्जा'].some(k => msgLower.includes(k))) {
+        intent = "eco_route_query";
+        replyEn = "The Lowest Energy Eco Route consumes approximately 14% to 18% less energy by maintaining steady cruising speeds, avoiding steep highway climbs, and maximizing regenerative braking recuperation.";
+        replyTe = "ఎకో రూట్ స్థిరమైన వేగాన్ని కొనసాగించడం, నిటారుగా ఉండే ఎత్తులను నివారించడం మరియు రీజెనరేటివ్ బ్రేకింగ్‌ను గరిష్టంగా ఉపయోగించడం ద్వారా సుమారు 14% నుండి 18% తక్కువ శక్తిని వినియోగిస్తుంది.";
+        replyHi = "इको रूट स्थिर क्रूज़िंग गति बनाए रखकर, खड़ी ढलानों से बचकर और पुनर्योजी ब्रेकिंग को अधिकतम करके लगभग 14% से 18% कम ऊर्जा की खपत करता है।";
+      }
+      // 15. Enable Demo Mode.
+      else if (['enable demo mode', 'demo mode', 'డెమో మోడ్', 'डेमो मोड'].some(k => msgLower.includes(k))) {
+        intent = "enable_demo_mode";
+        replyEn = "Demo mode on and enjoy the ride. 3 sample EV profiles (City EV, Long Range EV, Performance EV) are now active with simulated telemetry.";
+        replyTe = "డెమో మోడ్ ఆన్ చేయబడింది మరియు డ్రైవ్‌ను ఆనందించండి. 3 నమూనా EV ప్రొఫైల్‌లు (సిటీ EV, లాంగ్ రేంజ్ EV, పెర్ఫార్మెన్స్ EV) ఇప్పుడు యాక్టివ్‌గా ఉన్నాయి.";
+        replyHi = "डेमो मोड चालू कर दिया गया है। 3 नमूना EV प्रोफ़ाइल (सिटी EV, लॉन्ग रेंज EV, परफॉर्मेंस EV) अब सक्रिय हैं।";
+      }
+      // Hardware voice controls
+      else if (msgLower.includes('ac') || msgLower.includes('climate') || msgLower.includes('ఏసీ') || msgLower.includes('एसी')) {
+        intent = "climate_ac_on";
+        replyEn = "Cabin climate control has been turned ON. Set to 22.0°C in Auto comfort mode.";
+        replyTe = "క్యాబిన్ ఏసీ ఆన్ చేయబడింది. ఉష్ణోగ్రత 22.0°C కు సెట్ చేయబడింది.";
+        replyHi = "केबिन क्लाइमेट कंट्रोल चालू कर दिया गया है। ऑटो मोड में 22.0°C पर सेट है।";
+      } else if (msgLower.includes('tyre') || msgLower.includes('tire') || msgLower.includes('tpms') || msgLower.includes('టైర్') || msgLower.includes('टायर')) {
+        intent = "tpms_query";
+        replyEn = "Tyre Pressure Monitoring System (TPMS): Front Left: 36.0 PSI, Front Right: 35.8 PSI, Rear Left: 36.2 PSI, Rear Right: 36.0 PSI. All four tyres are within normal specification.";
+        replyTe = "టైర్ ప్రెజర్ మానిటరింగ్ (TPMS): నాలుగు టైర్లు సురక్షితమైన 36 PSI పరిమితిలో ఉన్నాయి.";
+        replyHi = "टायर प्रेशर मॉनिटरिंग सिस्टम (TPMS): सभी चारों टायर सामान्य विनिर्देश के भीतर हैं।";
+      } else if (msgLower.includes('door') || msgLower.includes('lock') || msgLower.includes('డోర్') || msgLower.includes('दरवाजे')) {
+        intent = "doors_status_query";
+        replyEn = "All passenger doors and the trunk are SECURELY LOCKED.";
+        replyTe = "అన్ని డోర్లు మరియు ట్రంక్ సురక్షితంగా లాక్ చేయబడ్డాయి.";
+        replyHi = "सभी दरवाजे और ट्रंक सुरक्षित रूप से लॉक हैं।";
+      }
+
+      let chosen = replyEn;
+      if (language === 'te') chosen = replyTe;
+      else if (language === 'hi') chosen = replyHi;
+
       return {
-        response_text: reply,
-        audio_text: reply,
-        intent: 'general_query',
+        response_text: chosen,
+        audio_text: chosen,
+        intent: intent,
         language: language,
         proactive_alert: null,
-        suggested_actions: ['View Battery Intelligence', 'Run Diagnostic Scan', 'Find Charging Stations']
+        suggested_actions: [
+          "Hello",
+          "What is my battery percentage?",
+          "What is my battery health?",
+          "How much range is remaining?",
+          "Is my vehicle healthy?",
+          "Find nearby charging stations."
+        ]
       };
     }
   },

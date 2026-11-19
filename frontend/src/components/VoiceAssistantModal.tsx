@@ -34,33 +34,91 @@ interface Message {
 
 export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen, onClose }) => {
   const { activeVehicle } = useAuth();
+
+  const [language, setLanguage] = useState<'en' | 'te' | 'hi'>(() => {
+    const saved = localStorage.getItem('smartvoice_lang');
+    return (saved === 'te' || saved === 'hi' || saved === 'en') ? saved : 'en';
+  });
+
+  const getInitialGreeting = (lang: 'en' | 'te' | 'hi') => {
+    switch (lang) {
+      case 'te':
+        return "హలో! మీకు మంచి రోజు కలగాలి. EV SmartTrace 360 కి స్వాగతం. ఈరోజు మీ కారుకు సంబంధించి ఏదైనా సహాయం కావాలా?";
+      case 'hi':
+        return "नमस्ते! आपका दिन शुभ हो। EV SmartTrace 360 में आपका स्वागत है। क्या आज आपको अपनी कार के लिए कोई सहायता चाहिए?";
+      case 'en':
+      default:
+        return "Hello! Have a nice day. Welcome to EV SmartTrace 360. Do you need any help with your car today?";
+    }
+  };
+
+  const getSampleActions = (lang: 'en' | 'te' | 'hi') => {
+    if (lang === 'te') {
+      return [
+        "నా బ్యాటరీ శాతం ఎంత?",
+        "నా బ్యాటరీ ఆరోగ్యం ఎలా ఉంది?",
+        "బ్యాటరీ ఉష్ణోగ్రత ఎంత?",
+        "ఎంత డ్రైవింగ్ దూరం మిగిలి ఉంది?",
+        "నా వాహనం ఆరోగ్యంగా ఉందా?",
+        "సమీప ఛార్జింగ్ స్టేషన్లను కనుగొనండి.",
+        "డెమో మోడ్‌ను ప్రారంభించండి."
+      ];
+    } else if (lang === 'hi') {
+      return [
+        "मेरी बैटरी का प्रतिशत कितना है?",
+        "मेरी बैटरी का स्वास्थ्य कैसा है?",
+        "बैटरी का तापमान कितना है?",
+        "कितनी ड्राइविंग दूरी शेष है?",
+        "क्या मेरा वाहन स्वस्थ है?",
+        "निकटतम चार्जिंग स्टेशन खोजें।",
+        "डेमो मोड सक्षम करें।"
+      ];
+    } else {
+      return [
+        "What is my battery percentage?",
+        "What is my battery health?",
+        "What is the battery temperature?",
+        "How much range is remaining?",
+        "Is my vehicle healthy?",
+        "Find nearby charging stations.",
+        "Enable Demo Mode."
+      ];
+    }
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: "Hello! Welcome to EV SmartTrace 360. Do you need any help with your car today?",
+      text: getInitialGreeting(
+        (localStorage.getItem('smartvoice_lang') as 'en' | 'te' | 'hi') || 'en'
+      ),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      suggestedActions: [
-        "Turn on the AC",
-        "Check tyre pressure",
-        "Are the doors locked?",
-        "Check seatbelt status",
-        "What is my battery percentage?",
-        "Is my vehicle healthy?",
-        "AC ఆన్ చేయండి (Telugu)"
-      ]
+      suggestedActions: getSampleActions(
+        (localStorage.getItem('smartvoice_lang') as 'en' | 'te' | 'hi') || 'en'
+      )
     }
   ]);
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechMuted, setSpeechMuted] = useState(false);
-  const [language, setLanguage] = useState<'en' | 'te' | 'hi'>('en');
   const [isLoading, setIsLoading] = useState(false);
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const [proactiveAlert, setProactiveAlert] = useState<{ title: string; message: string; severity: string } | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleLanguageChange = (newLang: 'en' | 'te' | 'hi') => {
+    setLanguage(newLang);
+    localStorage.setItem('smartvoice_lang', newLang);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+    setVoiceNotice(null);
+  };
 
   // Initialize Web Speech API for voice capture
   useEffect(() => {
@@ -107,9 +165,23 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
 
     const utterance = new SpeechSynthesisUtterance(text);
     const langCodes = { en: 'en-US', te: 'te-IN', hi: 'hi-IN' };
-    utterance.lang = langCodes[language];
-    utterance.rate = 1.05;
+    const targetCode = langCodes[language];
+    utterance.lang = targetCode;
+    utterance.rate = 1.0;
     utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const matchedVoice = voices.find(v => 
+      v.lang.toLowerCase() === targetCode.toLowerCase() || 
+      v.lang.toLowerCase().startsWith(language)
+    );
+
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    } else if (language !== 'en') {
+      setVoiceNotice(`Spoken audio output for ${language === 'te' ? 'Telugu (తెలుగు)' : 'Hindi (हिन्दी)'} is not supported by your browser voice pack. The translated text is displayed in the conversation.`);
+      return;
+    }
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
@@ -167,7 +239,9 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         intent: res.intent,
         proactiveAlert: res.proactive_alert,
-        suggestedActions: res.suggested_actions
+        suggestedActions: (res.suggested_actions && res.suggested_actions.length > 0)
+          ? res.suggested_actions
+          : getSampleActions(targetLang)
       };
 
       setMessages((prev) => [...prev, botMsg]);
@@ -223,7 +297,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
             <div className="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
               <Globe className="w-3.5 h-3.5 text-slate-400 ml-1" />
               <button
-                onClick={() => setLanguage('en')}
+                onClick={() => handleLanguageChange('en')}
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
                   language === 'en' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
                 }`}
@@ -231,7 +305,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
                 EN
               </button>
               <button
-                onClick={() => setLanguage('te')}
+                onClick={() => handleLanguageChange('te')}
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
                   language === 'te' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
                 }`}
@@ -239,7 +313,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
                 తెలుగు
               </button>
               <button
-                onClick={() => setLanguage('hi')}
+                onClick={() => handleLanguageChange('hi')}
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
                   language === 'hi' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
                 }`}
@@ -285,6 +359,19 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
             </div>
             <button
               onClick={() => setProactiveAlert(null)}
+              className="text-xs text-slate-400 hover:text-slate-200 ml-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Voice Unavailable Notice */}
+        {voiceNotice && (
+          <div className="bg-sky-500/10 border-b border-sky-500/30 px-4 py-2 flex items-center justify-between">
+            <p className="text-xs text-sky-300">{voiceNotice}</p>
+            <button
+              onClick={() => setVoiceNotice(null)}
               className="text-xs text-slate-400 hover:text-slate-200 ml-2"
             >
               Dismiss
