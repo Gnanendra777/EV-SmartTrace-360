@@ -397,7 +397,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     Operator: <span className="text-slate-200">{station.operator}</span>
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    Pricing: <span className="text-slate-300">{station.pricing_text || 'Pricing information unavailable.'}</span>
+                    Pricing: <span className="text-slate-300">{station.pricing_text && station.pricing_text !== 'Pricing information unavailable.' ? station.pricing_text : 'Not provided'}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    Status: <span className="text-slate-300">{station.availability_status && !station.availability_status.includes('not provided by the data source') ? station.availability_status : 'Not provided'}</span>
                   </div>
                 </div>
               </Popup>

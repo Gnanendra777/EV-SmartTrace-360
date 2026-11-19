@@ -723,7 +723,7 @@ export const SmartNavigationPage: React.FC = () => {
                       </div>
 
                       <div className="text-[10px] text-slate-400">
-                        Pricing: <span className="text-slate-300">{station.pricing_text || 'Pricing information unavailable.'}</span>
+                        Pricing: <span className="text-slate-300">{station.pricing_text && station.pricing_text !== 'Pricing information unavailable.' ? station.pricing_text : 'Not provided'}</span>
                       </div>
 
                       {/* Add or Remove Waypoint Button */}

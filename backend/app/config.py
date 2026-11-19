@@ -1,6 +1,17 @@
 import os
-from pydantic_settings import BaseSettings
 from typing import List
+from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+
+# Search and load .env safely from current directory, backend directory, or project root
+_curr_dir = os.path.abspath(os.path.dirname(__file__))
+for _env_path in [
+    os.path.join(os.getcwd(), ".env"),
+    os.path.join(_curr_dir, "..", ".env"),
+    os.path.join(_curr_dir, "..", "..", ".env")
+]:
+    if os.path.isfile(_env_path):
+        load_dotenv(_env_path, override=False)
 
 
 class Settings(BaseSettings):

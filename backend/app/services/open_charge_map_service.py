@@ -101,19 +101,33 @@ def format_open_charge_map_poi(poi: Dict[str, Any], user_lat: float, user_lon: f
     operator_info = poi.get("OperatorInfo", {}) or {}
     operator_name = operator_info.get("Title") or "Independent Operator"
 
-    # Status
+    # Status & Live Availability
     status_type = poi.get("StatusType", {}) or {}
-    status_title = status_type.get("Title") or "Operational"
-    is_operational = status_type.get("IsOperational", True)
-    if is_operational is None:
-        is_operational = True
+    raw_status_title = status_type.get("Title")
+    is_operational = status_type.get("IsOperational")
+    
+    if raw_status_title and raw_status_title.strip():
+        status_title = raw_status_title.strip()
+        availability_status = status_title
+    elif is_operational is True:
+        status_title = "Operational"
+        availability_status = "Operational"
+    elif is_operational is False:
+        status_title = "Not Operational"
+        availability_status = "Not Operational"
+    else:
+        status_title = "Not provided"
+        availability_status = "Not provided"
 
     # Pricing
     usage_cost = poi.get("UsageCost")
-    pricing_text = usage_cost if usage_cost else "Pricing information unavailable."
+    if usage_cost and usage_cost.strip():
+        pricing_text = usage_cost.strip()
+    else:
+        pricing_text = "Not provided"
     
     # Last updated
-    last_updated = poi.get("DateLastStatusUpdate") or poi.get("DateCreated") or "Recently verified"
+    last_updated = poi.get("DateLastStatusUpdate") or poi.get("DateCreated") or "Not provided"
 
     # Address composition
     address_parts = [
@@ -137,10 +151,10 @@ def format_open_charge_map_poi(poi: Dict[str, Any], user_lat: float, user_lon: f
         "charging_power": round(max_kw, 1),
         "connector_type": connector_str,
         "connector_types": connector_names if connector_names else ["CCS2", "Type 2"],
-        "availability_status": "Live availability not provided by the data source.",
+        "availability_status": availability_status,
         "pricing_per_kwh": None,
         "pricing_text": pricing_text,
-        "is_operational": is_operational,
+        "is_operational": is_operational if is_operational is not None else True,
         "status_title": status_title,
         "ac_dc_type": ac_dc_type,
         "connections_count": max(total_ports, 1),
@@ -181,15 +195,15 @@ def get_fallback_stations(lat: float, lon: float, distance_km: float = 25.0) -> 
                 "charging_power": item["kw"],
                 "connector_type": ", ".join(item["conns"]),
                 "connector_types": item["conns"],
-                "availability_status": "Live availability not provided by the data source.",
+                "availability_status": "Not provided",
                 "pricing_per_kwh": None,
-                "pricing_text": "Pricing information unavailable.",
+                "pricing_text": "Not provided",
                 "is_operational": True,
-                "status_title": "Operational",
+                "status_title": "Not provided",
                 "ac_dc_type": item["acdc"],
                 "connections_count": len(item["conns"]) * 2,
                 "data_source": "Verified EV Corridor Registry",
-                "last_updated": "Recently verified"
+                "last_updated": "Not provided"
             })
             base_id += 1
 
@@ -216,7 +230,7 @@ async def fetch_open_charge_map_stations(
         if now - cached_time < CACHE_TTL_SECONDS:
             return cached_data
 
-    api_key = settings.OPEN_CHARGE_MAP_API_KEY or os.getenv("OPEN_CHARGE_MAP_API_KEY", "").strip()
+    api_key = (getattr(settings, "OPEN_CHARGE_MAP_API_KEY", "") or os.getenv("OPEN_CHARGE_MAP_API_KEY", "")).strip()
     
     # Open Charge Map API URL
     url = "https://api.openchargemap.io/v3/poi/"
@@ -236,6 +250,7 @@ async def fetch_open_charge_map_stations(
     }
     if api_key:
         headers["X-API-Key"] = api_key
+        params["key"] = api_key
 
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:

@@ -473,14 +473,18 @@ export const ChargingStationsPage: React.FC = () => {
                 <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
                   <span className="text-slate-400 font-mono">Pricing Tariff:</span>
                   <span className="text-slate-200 font-medium">
-                    {selectedStation.pricing_text || 'Pricing information unavailable.'}
+                    {selectedStation.pricing_text && selectedStation.pricing_text !== 'Pricing information unavailable.'
+                      ? selectedStation.pricing_text
+                      : 'Not provided'}
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-                  <span className="text-slate-400 font-mono">Real-Time Occupancy:</span>
-                  <span className="text-slate-400 italic">
-                    Live availability not provided by the data source.
+                  <span className="text-slate-400 font-mono">Availability Status:</span>
+                  <span className="text-slate-200 font-medium">
+                    {selectedStation.availability_status && !selectedStation.availability_status.includes('not provided by the data source')
+                      ? selectedStation.availability_status
+                      : 'Not provided'}
                   </span>
                 </div>
 
