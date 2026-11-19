@@ -26,16 +26,33 @@ import { ProfilePage } from './pages/ProfilePage';
 const AppLayout: React.FC = () => {
   const location = useLocation();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const { isDemoMode, demoNotification, dismissDemoNotification } = useAuth();
 
   // Hide global navbar on landing page and auth pages
   const isAuthOrLanding = ['/', '/login', '/register', '/forgot-password'].includes(location.pathname);
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent text-inherit relative">
+    <div className={`min-h-screen flex flex-col bg-transparent text-inherit relative transition-all duration-500 ${isDemoMode ? 'demo-aurora-active' : ''}`}>
       <ModuleBackground />
+
+      {/* Demo Mode Announcement Toast Notification */}
+      {demoNotification && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-2xl bg-[#071B22]/95 border border-[#20D6C2]/60 shadow-2xl shadow-[#20D6C2]/25 text-xs text-[#20D6C2] font-semibold flex items-center space-x-3 backdrop-blur-md animate-bounce">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#20D6C2] animate-ping" />
+          <span>{demoNotification}</span>
+          <button 
+            onClick={dismissDemoNotification} 
+            className="text-slate-400 hover:text-white ml-2 text-sm font-bold"
+            title="Dismiss notification"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {!isAuthOrLanding && <Navbar onOpenVoice={() => setIsVoiceOpen(true)} />}
 
-      <main className="flex-1 relative z-10">
+      <main key={location.pathname} className="flex-1 relative z-10 page-fade-slide">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />

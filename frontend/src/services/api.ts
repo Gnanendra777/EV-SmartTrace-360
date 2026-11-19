@@ -53,9 +53,9 @@ export const api = {
     }
   },
 
-  register: async (name: string, email: string, password: string) => {
+  register: async (name: string, email: string, password: string, phone_number?: string) => {
     try {
-      const res = await apiClient.post('/auth/register', { name, email, password });
+      const res = await apiClient.post('/auth/register', { name, email, password, phone_number });
       return res.data;
     } catch (e) {
       return {
@@ -64,6 +64,22 @@ export const api = {
         user_id: 2,
         name: name,
         email: email
+      };
+    }
+  },
+
+  demoAccess: async (name: string, email: string) => {
+    try {
+      const res = await apiClient.post('/auth/demo-access', { name, email });
+      return res.data;
+    } catch (e) {
+      return {
+        access_token: 'mock-jwt-token-demo-session',
+        token_type: 'bearer',
+        user_id: 99,
+        name: name,
+        email: email,
+        is_demo: true
       };
     }
   },
@@ -77,9 +93,16 @@ export const api = {
         id: 1,
         name: 'Alex Rivers',
         email: 'demo@evsmarttrace.com',
+        phone_number: '+1 (555) 234-5678',
+        account_type: 'Demo',
         created_at: new Date().toISOString()
       };
     }
+  },
+
+  updateProfile: async (data: { name?: string; phone_number?: string; password?: string }): Promise<User> => {
+    const res = await apiClient.put('/auth/profile', data);
+    return res.data;
   },
 
   // Vehicles
@@ -114,6 +137,15 @@ export const api = {
 
   updateVehicle: async (id: number, data: Partial<Vehicle>): Promise<Vehicle> => {
     const res = await apiClient.put(`/vehicles/${id}`, data);
+    return res.data;
+  },
+
+  deleteVehicle: async (id: number): Promise<void> => {
+    await apiClient.delete(`/vehicles/${id}`);
+  },
+
+  resetDemoData: async (): Promise<Vehicle[]> => {
+    const res = await apiClient.post('/vehicles/reset-demo');
     return res.data;
   },
 

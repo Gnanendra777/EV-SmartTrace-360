@@ -32,7 +32,7 @@ import { api } from '../services/api';
 import { DashboardStats } from '../types';
 
 export const DashboardPage: React.FC = () => {
-  const { activeVehicle, isDemoMode } = useAuth();
+  const { activeVehicle, setActiveVehicle, vehicles, isDemoMode, resetDemoData } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,7 +67,7 @@ export const DashboardPage: React.FC = () => {
   const healthScore = stats?.health_score || 88;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-8">
       
       {/* Top Cockpit Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -102,6 +102,60 @@ export const DashboardPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Phase 2: Sample EV Datasets Switcher in Demo Mode */}
+      {isDemoMode && (
+        <div className="p-4 rounded-2xl glass-panel border border-cyan-500/30 bg-[#071B22]/70 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
+                DEMO / SIMULATED DATASETS
+              </span>
+              <p className="text-xs text-slate-300">
+                Switch between persistent realistic EV profiles or reset test records.
+              </p>
+            </div>
+            <button
+              onClick={resetDemoData}
+              className="self-start sm:self-auto flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] text-cyan-400 font-mono transition"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Reset Demo Data</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {vehicles.filter(v => v.is_demo).map((v) => {
+              const isSelected = activeVehicle?.id === v.id;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setActiveVehicle(v)}
+                  className={`p-3 rounded-xl text-left border transition ${
+                    isSelected
+                      ? 'bg-cyan-500/15 border-cyan-400 shadow-md shadow-cyan-500/10'
+                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">{v.vehicle_name}</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                      isSelected ? 'bg-cyan-400 text-slate-950 font-bold' : 'text-slate-400'
+                    }`}>
+                      {v.battery_capacity} kWh
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{v.manufacturer} {v.model}</p>
+                  <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span>SOC: <strong className="text-emerald-400">{v.current_battery_pct}%</strong></span>
+                    <span>Eff: <strong className="text-cyan-400">{v.efficiency_kwh_km} kWh/km</strong></span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main KPI Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

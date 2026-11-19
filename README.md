@@ -1,23 +1,28 @@
 # EV SMARTTRACE 360
 > **Tagline:** Drive Smart. Charge Smart. Travel Safe.
 
-An enterprise-grade, full-stack, AI-powered Electric Vehicle Intelligence and Management Platform. EV SmartTrace 360 acts as a centralized intelligent automotive co-pilot that monitors battery health, analyzes energy economics, predicts driving range with Random Forest ML, diagnoses vehicle trouble codes with Isolation Forest, locates verified charging facilities, computes optimized travel corridors, and interacts with drivers via an intelligent voice assistant.
+An enterprise-grade, full-stack, AI-powered Electric Vehicle Intelligence and Fleet Management Platform. EV SmartTrace 360 acts as a centralized intelligent automotive co-pilot that monitors battery health, analyzes energy economics, predicts driving range with Random Forest ML, diagnoses vehicle trouble codes with Isolation Forest, locates verified charging facilities, computes optimized travel corridors, and interacts with drivers via an intelligent voice assistant in **English** and **Telugu (తెలుగు)**.
 
 ---
 
 ## ⚡ Key Highlights & Capabilities
 
-- 🔋 **Module 1 – AI Battery Intelligence**: Real-time State of Charge (SOC), State of Health (SOH), pack voltage (400V), cell imbalance tracking, and Random Forest range predictions with 95% confidence intervals.
-- ⚡ **Module 2 – Smart Charging & Energy Analytics**: Metered charging duration, CC-CV taper curve modeling, electricity tariff calculations, and Isolation Forest anomaly detection for abnormal consumption spikes.
-- 🛡️ **Module 3 & 7 – AI Vehicle Diagnostics Scanner**: Interactive "SCAN MY EV" sweep monitoring traction motor stator temperatures, battery pack delta, inverter coolant flow (P0A93), and auxiliary 12V DC-DC health. Generates complete AI Health Reports.
-- 📍 **Module 4 – Nearby EV Charging Station Finder**: Interactive dark-mode Leaflet map with verified station pins, connector filters (CCS2, Type 2, CHAdeMO, Supercharger), live speed metrics, and distance calculations.
-- 🧭 **Module 5 – AI Smart Route Optimization**: Evaluates departure SOC and arrival safety buffers to compute 3 distinct itineraries:
+- 🔋 **Advanced Battery Intelligence**: Real-time State of Charge (SOC), State of Health (SOH), pack voltage, cell imbalance tracking, and Random Forest range predictions with 95% confidence intervals.
+- 🚗 **3 Persistent Sample EV Datasets**:
+  1. **City EV**: 40 kWh battery, 70% SOC, 96% SOH, 0.14 kWh/km consumption, 29°C pack temp, ~200 km range.
+  2. **Long Range EV**: 75 kWh battery, 85% SOC, 98% SOH, 0.16 kWh/km consumption, 31°C pack temp, ~398 km range.
+  3. **Performance EV**: 60 kWh battery, 45% SOC, 91% SOH, 0.19 kWh/km consumption, 34°C pack temp, ~142 km range.
+- ⚡ **Smart Charging & Energy Analytics**: Metered charging duration, CC-CV taper curve modeling, electricity tariff calculations, and Isolation Forest anomaly detection for abnormal consumption spikes.
+- 🛡️ **Interactive 360° Vehicle Health Scanner**: Autonomous sensor sweep monitoring traction motor stator temperatures, battery pack delta, inverter coolant flow (P0A93), and auxiliary 12V DC-DC health. Generates complete AI Health Reports.
+- 📍 **Live EV Map & Charging Station Discovery**: Leaflet map with verified station pins, browser Geolocation API ("Locate Me"), radius filtering (5 km, 10 km, 25 km, 50 km), connector filters (CCS2, Type 2, CHAdeMO), and Google Maps routing.
+- 🧭 **Intelligent EV Route Optimizer**: Evaluates departure SOC and arrival safety buffers to compute:
   1. *Fastest Highway Route*
-  2. *Lowest Energy Eco Route*
+  2. *Lowest Energy Eco Route* (saves 14–18% energy)
   3. *Recommended Balanced Route* (with automated fast charging stops inserted).
-- 🎙️ **Module 6 – EV SmartVoice Cockpit Assistant**: Siri-like voice interface with animated audio waveforms, speech recognition (Web Speech API), speech synthesis (TTS), text chat fallback, and multilingual support for **English**, **Telugu (తెలుగు)**, and **Hindi (हिन्दी)**.
-- 📊 **Reports & Exporting**: Audit statements, carbon emission savings, and one-click CSV & printable reports.
-- 🎮 **Demo Mode**: Includes pre-seeded Tesla Model 3 Long Range (60 kWh, 70% SOC, 0.150 kWh/km) and toggleable simulated live telemetry.
+- 🎙️ **Smarter EV SmartVoice Cockpit Assistant**: Siri-style voice interface with speech recognition (Web Speech API), speech synthesis (TTS), text chat fallback, personalized greetings, and native support for **English** and **Telugu (తెలుగు)**.
+- 🌌 **Demo Mode Lighting Effect**: Switches to a sleek cyan/green ambient aurora glow with audio announcement *"Demo mode on and enjoy the ride."* and toast notification.
+- 👤 **Complete Full-Screen Profile & Fleet Manager**: Two distinct sections for Account Details (name, email, phone, creation date, account type) and Registered Vehicles (nickname, specs, connector, edit & remove with confirmation dialogs).
+- 📊 **Reports & Exporting**: Audit statements, carbon emission savings, and one-click CSV & printable PDF reports.
 
 ---
 
@@ -30,7 +35,7 @@ An enterprise-grade, full-stack, AI-powered Electric Vehicle Intelligence and Ma
 | **Database** | MySQL 8.0+ / SQLite auto-fallback, normalized schema with indexing and cascading foreign keys |
 | **AI / ML** | Scikit-learn (RandomForestRegressor, IsolationForest), Pandas, NumPy, Joblib |
 | **Assistant** | Web Speech API, SpeechSynthesis, contextual natural language reasoning |
-| **Deployment** | Frontend on Vercel, Backend on Render/Railway/Docker, Managed MySQL |
+| **Deployment** | Vercel (Frontend & Serverless FastAPI via `pyproject.toml`), Render/Railway (Backend & MySQL) |
 
 ---
 
@@ -43,12 +48,12 @@ An enterprise-grade, full-stack, AI-powered Electric Vehicle Intelligence and Ma
 
 ### 2. Backend Setup
 ```bash
-cd ev-smart/backend
+cd backend
 
 # Install Python requirements
 pip install -r requirements.txt
 
-# Start the FastAPI server (auto-creates tables and seeds demo data)
+# Start the FastAPI server (auto-creates tables and seeds 3 sample EV profiles)
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 - API Base URL: `http://localhost:8000/api`
@@ -56,7 +61,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### 3. Frontend Setup
 ```bash
-cd ev-smart/frontend
+cd frontend
 
 # Install dependencies
 npm install
@@ -68,25 +73,34 @@ npm run dev
 
 ---
 
-## 🔑 Demo Account Credentials
+## 🔑 Demo & Account Access
 
-| Parameter | Value |
+| Mode | Credentials |
 |---|---|
-| **Email** | `demo@evsmarttrace.com` |
-| **Password** | `DemoPassword123!` |
-| **Quick Action** | Click the **"Quick Demo Sign-In"** button on the Login page |
+| **Quick Demo** | Click **"Quick Demo"** on the Login page (`demo@evsmarttrace.com` / `DemoPassword123!`) |
+| **Custom Demo** | Click **"Custom Demo"** on the Login page to enter any display name & email for an isolated session |
+| **New Account** | Click **"Register"** to create a secure personal account with optional phone number |
 
 ---
 
-## 🧠 Machine Learning Architecture
+## 🌐 Vercel & Production Deployment
 
-1. **Random Forest Driving Range Regressor**:
-   - Model: 120-tree ensemble trained on velocity, ambient thermal penalty, HVAC climate load, payload weight, and battery SOC.
-   - Evaluated Performance: $R^2 = 0.9442$, Mean Squared Error $= 0.000053$.
-   - Produces estimated range plus uncertainty bounds ($CI_{95\%}$).
+### 1. Vercel Configuration
+The repository includes root configuration files for Vercel deployment:
+- `pyproject.toml`: Defines the FastAPI entrypoint:
+  ```toml
+  [tool.vercel]
+  entrypoint = "backend.app.main:app"
+  ```
+- `vercel.json`: Directs the frontend build and rewrites `/api/*`, `/docs`, and `/openapi.json` to the FastAPI backend while serving the SPA for client routes.
+- `requirements.txt`: Root Python dependencies for the Vercel Python runtime.
 
-2. **Isolation Forest Anomaly Detector**:
-   - Model: 100-tree isolation ensemble detecting abnormal cell balance deltas ($>15\text{ mV}$), motor thermal spikes ($>85^\circ\text{C}$), and consumption surge anomalies ($+25\%$).
+### 2. Environment Variables
+Copy `.env.example` to `.env`:
+- `DATABASE_URL`: Production MySQL connection string (e.g. `mysql+pymysql://user:pass@host:3306/dbname`).
+- `JWT_SECRET_KEY`: Secret string for signing auth tokens (minimum 32 characters).
+- `GEMINI_API_KEY`: (Optional) Google Gemini API key for external LLM reasoning.
+- `VITE_API_BASE_URL`: (Optional) Backend API URL if hosting frontend and backend on separate domains. When deployed on the same Vercel domain, it defaults to `/api`.
 
 ---
 
@@ -97,13 +111,12 @@ ev-smart/
 ├── frontend/             # React + Vite + TypeScript dashboard
 │   ├── src/
 │   │   ├── components/   # Navbar, SmartVoice modal, Diagnostic scanner, Interactive map
-│   │   ├── pages/        # Dashboard, Battery, Energy, Diagnostics, Stations, Navigation, Voice
+│   │   ├── pages/        # Dashboard, Battery, Energy, Diagnostics, Stations, Navigation, Voice, Profile
 │   │   ├── context/      # AuthContext & fleet state
 │   │   ├── services/     # Axios API layer with offline mock resilience
 │   │   └── types/        # TypeScript data models
 │   ├── package.json
-│   ├── vite.config.ts
-│   └── vercel.json
+│   └── vite.config.ts
 ├── backend/              # FastAPI Python backend
 │   ├── app/
 │   │   ├── main.py       # App entrypoint & auto-seeding
@@ -114,18 +127,11 @@ ev-smart/
 │   │   ├── services/     # Telemetry simulation, route optimizer, SmartVoice
 │   │   └── security/     # JWT authentication & password hashing
 │   ├── requirements.txt
-│   └── Dockerfile
-├── database/
-│   ├── schema.sql        # MySQL 8.0+ DDL table definitions
-│   └── seed.sql          # Seed data for demo vehicle, stations, diagnostics
-├── ml/
-│   ├── train_range_model.py     # Random Forest range model trainer
-│   ├── train_anomaly_model.py   # Isolation Forest anomaly model trainer
-│   ├── prediction_service.py    # Real-time inference service
-│   └── models/                  # Serialized .joblib models
-└── docs/
-    ├── API_DOCUMENTATION.md     # Full REST API endpoints reference
-    └── DEPLOYMENT.md            # Vercel & Render production deployment guide
+│   └── test_endpoints.py # Automated endpoint verification suite
+├── pyproject.toml        # Root Vercel FastAPI entrypoint configuration
+├── vercel.json           # Vercel build and routing configuration
+├── requirements.txt      # Root Python dependency manifest
+└── .env.example          # Environment variable template
 ```
 
 ---

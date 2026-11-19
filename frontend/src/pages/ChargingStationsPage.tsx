@@ -22,7 +22,29 @@ export const ChargingStationsPage: React.FC = () => {
   const [searchCity, setSearchCity] = useState('');
   const [connectorFilter, setConnectorFilter] = useState('All');
   const [powerFilter, setPowerFilter] = useState<number | undefined>(undefined);
+  const [radiusFilter, setRadiusFilter] = useState<number>(25);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationStatus, setLocationStatus] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleLocateMe = () => {
+    if ('geolocation' in navigator) {
+      setLocationStatus('Locating...');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+          setLocationStatus('Located');
+          setTimeout(() => setLocationStatus(''), 3000);
+        },
+        () => {
+          setLocationStatus('Permission Denied / Unavailable');
+          setTimeout(() => setLocationStatus(''), 4000);
+        }
+      );
+    } else {
+      setLocationStatus('Geolocation unsupported');
+    }
+  };
 
   const fetchStations = async () => {
     setIsLoading(true);
@@ -56,7 +78,7 @@ export const ChargingStationsPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-6">
       
       {/* Page Header */}
       <div>
@@ -122,10 +144,33 @@ export const ChargingStationsPage: React.FC = () => {
             </select>
           </div>
 
+          <div className="flex items-center space-x-1.5 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
+            <span className="text-slate-400">Radius:</span>
+            <select
+              value={radiusFilter}
+              onChange={(e) => setRadiusFilter(Number(e.target.value))}
+              className="bg-transparent text-amber-400 font-semibold focus:outline-none"
+            >
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="25">25 km</option>
+              <option value="50">50 km</option>
+            </select>
+          </div>
+
+          <button
+            onClick={handleLocateMe}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-cyan-500/40 text-cyan-400 hover:bg-slate-800 text-xs font-medium transition"
+          >
+            <Compass className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{locationStatus || 'Locate Me'}</span>
+          </button>
+
           <button
             onClick={() => {
               setConnectorFilter('All');
               setPowerFilter(undefined);
+              setRadiusFilter(25);
               setSearchCity('');
             }}
             className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1"

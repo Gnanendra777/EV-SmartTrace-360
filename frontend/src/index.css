@@ -508,3 +508,57 @@ html.theme-monochrome ::-webkit-scrollbar-thumb {
 html.theme-monochrome ::-webkit-scrollbar-thumb:hover {
   background: #ffffff;
 }
+
+/* Phase 5: Demo Mode Aurora Lighting Effect */
+.demo-aurora-active {
+  box-shadow: inset 0 0 100px rgba(32, 214, 194, 0.08), inset 0 0 40px rgba(34, 197, 94, 0.05);
+  position: relative;
+}
+
+.demo-aurora-active::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #20D6C2, #438CFF, #22C78A, #20D6C2);
+  background-size: 300% 100%;
+  animation: auroraScan 4s linear infinite;
+  z-index: 100;
+  pointer-events: none;
+}
+
+@keyframes auroraScan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Phase 1: Smooth Navigation Page Transitions */
+.page-fade-slide {
+  animation: pageFadeSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .demo-aurora-active::before {
+    animation: none !important;
+  }
+}

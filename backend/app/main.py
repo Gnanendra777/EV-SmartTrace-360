@@ -53,54 +53,9 @@ def seed_initial_data():
             db.refresh(demo_user)
             logger.info("Demo user created: demo@evsmarttrace.com (Password: DemoPassword123!)")
 
-        # Check if demo vehicle exists
-        demo_vehicle = db.query(Vehicle).filter(Vehicle.user_id == demo_user.id).first()
-        if not demo_vehicle:
-            demo_vehicle = Vehicle(
-                user_id=demo_user.id,
-                vehicle_name="CyberPulse GT (Demo)",
-                manufacturer="Tesla",
-                model="Model 3 Dual Motor",
-                vehicle_type="Sedan",
-                battery_capacity=60.0,
-                battery_chemistry="Lithium Nickel Manganese Cobalt (NMC)",
-                max_charging_power=170.0,
-                connector_types="CCS2, Tesla Supercharger, Type 2",
-                vehicle_identifier="EV-ST360-9842-DEMO",
-                current_battery_pct=70.0,
-                efficiency_kwh_km=0.150,
-                is_demo=True
-            )
-            db.add(demo_vehicle)
-            db.commit()
-            db.refresh(demo_vehicle)
-
-            # Battery Reading
-            init_batt = BatteryReading(
-                vehicle_id=demo_vehicle.id,
-                soc=70.0,
-                soh=95.2,
-                voltage=401.5,
-                temperature=27.8,
-                available_energy=42.0,
-                data_source="simulated"
-            )
-            db.add(init_batt)
-
-            # Diagnostic
-            diag = VehicleDiagnostic(
-                vehicle_id=demo_vehicle.id,
-                component="Cooling System",
-                fault_code="P0A93-00",
-                description="Inverter Cooling System Performance Degradation detected under high thermal load.",
-                severity="warning",
-                sensor_value=68.4,
-                expected_range="35.0 - 60.0 °C",
-                recommendation="Inspect coolant level and radiator fan assembly at next service.",
-                detection_source="isolation_forest"
-            )
-            db.add(diag)
-            db.commit()
+        # Seed the 3 standardized sample EV profiles with full historical records
+        from app.services.simulation_service import seed_sample_ev_datasets
+        seed_sample_ev_datasets(db, demo_user.id)
 
         # Seed Charging Stations if empty
         if db.query(ChargingStation).count() == 0:

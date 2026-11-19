@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, Lock, Mail, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
+import { Zap, Lock, Mail, ArrowRight, Sparkles, AlertCircle, User as UserIcon, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, demoAccess } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoName, setDemoName] = useState('');
+  const [demoEmail, setDemoEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +40,23 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const handleCustomDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoName.trim() || !demoEmail.trim()) {
+      setError('Display name and email are required to launch a demo session.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await demoAccess(demoName.trim(), demoEmail.trim());
+      navigate('/dashboard');
+    } catch {
+      setError('Could not start custom demo session.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#080c14]">
       <div className="w-full max-w-md glass-panel-glow rounded-2xl p-8 border border-slate-800 space-y-6 shadow-2xl">
@@ -58,21 +78,35 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Demo Fast Track Card */}
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <div className="text-left">
-              <p className="text-xs font-semibold text-emerald-300">Hackathon & Evaluation Mode</p>
-              <p className="text-[10px] text-slate-400">Pre-seeded with 60 kWh Tesla Model 3</p>
+        <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <div className="text-left">
+                <p className="text-xs font-semibold text-cyan-300">Demo Access & Evaluation</p>
+                <p className="text-[10px] text-slate-400">Pre-seeded 3 sample EV profiles (City, Long Range, Perf)</p>
+              </div>
             </div>
+            <span className="text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/30">
+              SIMULATION
+            </span>
           </div>
-          <button
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-            className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition"
-          >
-            Quick Demo Sign-In
-          </button>
+
+          <div className="flex items-center space-x-2 pt-1">
+            <button
+              onClick={handleDemoLogin}
+              disabled={isLoading}
+              className="flex-1 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition"
+            >
+              Quick Demo
+            </button>
+            <button
+              onClick={() => setShowDemoModal(true)}
+              className="flex-1 py-1.5 rounded-lg bg-slate-900 border border-cyan-500/40 text-cyan-400 font-semibold text-xs hover:bg-slate-800 transition"
+            >
+              Custom Demo
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -137,6 +171,76 @@ export const LoginPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Custom Demo Access Modal */}
+      {showDemoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-cyan-500/40 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-base font-bold text-white">Temporary Demo Session</h3>
+              </div>
+              <button onClick={() => setShowDemoModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Enter your name and email to start an isolated evaluation session. Demo access does not modify real vehicle accounts.
+            </p>
+
+            <form onSubmit={handleCustomDemoSubmit} className="space-y-3.5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Display Name</label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    required
+                    value={demoName}
+                    onChange={(e) => setDemoName(e.target.value)}
+                    placeholder="e.g. Maya Lin"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Your Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    required
+                    value={demoEmail}
+                    onChange={(e) => setDemoEmail(e.target.value)}
+                    placeholder="e.g. maya@evaluator.org"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowDemoModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold text-xs hover:brightness-110 transition"
+                >
+                  {isLoading ? 'Starting Demo...' : 'Launch Demo Experience'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

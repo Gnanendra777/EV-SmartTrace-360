@@ -2,6 +2,8 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  phone_number?: string;
+  account_type?: 'Registered' | 'Demo';
   created_at?: string;
 }
 

@@ -58,7 +58,7 @@ export const SmartNavigationPage: React.FC = () => {
   const activeRoute = routeResult?.routes.find((r) => r.route_id === selectedRouteId) || routeResult?.routes[0];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-6">
       
       {/* Header */}
       <div>

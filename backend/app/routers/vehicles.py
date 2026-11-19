@@ -24,6 +24,15 @@ def get_user_vehicles(
     return vehicles
 
 
+@router.post("/reset-demo", response_model=List[VehicleOut])
+def reset_demo_data(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from app.services.simulation_service import reset_demo_datasets
+    return reset_demo_datasets(db, current_user.id)
+
+
 @router.post("", response_model=VehicleOut, status_code=status.HTTP_201_CREATED)
 def create_vehicle(
     vehicle_in: VehicleCreate,

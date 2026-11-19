@@ -117,18 +117,25 @@ export const SmartVoicePage: React.FC = () => {
   };
 
   const sampleCommands = [
-    "Hey SmartTrace, what is my battery percentage?",
-    "How many kilometres can I travel?",
-    "Is there any problem with my car?",
-    "Explain the battery warning.",
-    "Find the nearest EV charging station.",
-    "How much time is required to charge to 80%?",
+    "Hello",
+    "What is my battery percentage?",
+    "What is my battery health?",
+    "What is the battery temperature?",
+    "How much range is remaining?",
+    "Explain my battery degradation trend",
+    "What is my average energy consumption?",
+    "How long will charging take?",
+    "What is my estimated charging cost?",
+    "Which connector does my vehicle support?",
+    "Find nearby charging stations",
+    "Is my vehicle healthy?",
+    "Calculate a route to my destination",
     "Which route consumes less energy?",
-    "Show my complete vehicle health report."
+    "Enable Demo Mode"
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-6">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

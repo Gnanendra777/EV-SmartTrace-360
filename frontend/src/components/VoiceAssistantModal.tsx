@@ -38,13 +38,15 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({ isOpen
     {
       id: 'welcome',
       sender: 'assistant',
-      text: "Hello! I am EV SmartVoice, your intelligent vehicle co-pilot. Ask me about your battery percentage, driving range, vehicle health, or nearest charging stations.",
+      text: "Hello! Welcome to EV SmartTrace 360. Do you need any help with your car today?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       suggestedActions: [
         "What is my battery percentage?",
-        "How many kilometres can I travel?",
-        "Is there any problem with my car?",
-        "Find nearest charging station"
+        "What is my battery health?",
+        "How much range is remaining?",
+        "Is my vehicle healthy?",
+        "Find nearby charging stations",
+        "How long will charging take?"
       ]
     }
   ]);

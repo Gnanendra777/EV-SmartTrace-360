@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, Lock, Mail, User as UserIcon, ArrowRight, AlertCircle } from 'lucide-react';
+import { Zap, Lock, Mail, User as UserIcon, Phone, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage: React.FC = () => {
@@ -8,6 +8,7 @@ export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +18,7 @@ export const RegisterPage: React.FC = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await register(name, email, password);
+      await register(name, email, password, phone || undefined);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed. Try another email.');
@@ -79,6 +80,20 @@ export const RegisterPage: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="driver@domain.com"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-300">Phone Number (Optional)</label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 (555) 019-2834"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60 font-mono"
               />
             </div>
           </div>

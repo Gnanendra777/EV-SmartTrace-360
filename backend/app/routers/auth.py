@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import UserRegister, UserLogin, Token, UserOut, UserProfileUpdate
+from app.schemas.auth import UserRegister, UserLogin, Token, UserOut, UserProfileUpdate, DemoAccessRequest
 from app.security.auth import verify_password, get_password_hash, create_access_token, get_current_user
 from app.services.simulation_service import seed_demo_vehicle_if_empty
 
@@ -21,6 +21,8 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     user = User(
         name=user_in.name,
         email=user_in.email,
+        phone_number=user_in.phone_number,
+        account_type="Registered",
         password_hash=get_password_hash(user_in.password)
     )
     db.add(user)
@@ -30,13 +32,51 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     # Seed demo vehicle for new user
     seed_demo_vehicle_if_empty(db, user.id)
 
-    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email, "is_demo": False})
     return Token(
         access_token=access_token,
         token_type="bearer",
         user_id=user.id,
         name=user.name,
-        email=user.email
+        email=user.email,
+        is_demo=False
+    )
+
+
+@router.post("/demo-access", response_model=Token)
+def demo_access(demo_in: DemoAccessRequest, db: Session = Depends(get_db)):
+    if not demo_in.name.strip() or not demo_in.email.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid name and email are required for demo access."
+        )
+
+    demo_email = demo_in.email.lower().strip()
+    if not demo_email.startswith("demo_"):
+        demo_email = f"demo_{demo_email}"
+
+    user = db.query(User).filter(User.email == demo_email).first()
+    if not user:
+        user = User(
+            name=demo_in.name.strip(),
+            email=demo_email,
+            account_type="Demo",
+            password_hash=get_password_hash("DemoTempPassword2026!")
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    seed_demo_vehicle_if_empty(db, user.id)
+
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email, "is_demo": True})
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user.id,
+        name=user.name,
+        email=user.email,
+        is_demo=True
     )
 
 
@@ -76,6 +116,8 @@ def update_profile(
 ):
     if update_in.name:
         current_user.name = update_in.name
+    if update_in.phone_number is not None:
+        current_user.phone_number = update_in.phone_number
     if update_in.password:
         current_user.password_hash = get_password_hash(update_in.password)
     db.commit()

@@ -49,7 +49,8 @@ def assistant_chat(
         latest_reading=latest_battery,
         active_diagnostics=diagnostics,
         nearby_stations=stations,
-        language=chat_req.language or "en"
+        language=chat_req.language or "en",
+        owner_name=current_user.name
     )
 
     # Save to voice conversation history
