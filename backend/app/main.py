@@ -157,18 +157,27 @@ async def websocket_telemetry_endpoint(websocket: WebSocket, vehicle_id: int):
     await stream_telemetry(vehicle_id, websocket)
 
 
-# Include API Routers
-app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
-app.include_router(vehicles.router, prefix=settings.API_V1_PREFIX)
-app.include_router(battery.router, prefix=settings.API_V1_PREFIX)
-app.include_router(energy.router, prefix=settings.API_V1_PREFIX)
-app.include_router(charging.router, prefix=settings.API_V1_PREFIX)
-app.include_router(diagnostics.router, prefix=settings.API_V1_PREFIX)
-app.include_router(routes.router, prefix=settings.API_V1_PREFIX)
-app.include_router(assistant.router, prefix=settings.API_V1_PREFIX)
-app.include_router(notifications.router, prefix=settings.API_V1_PREFIX)
-app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
-app.include_router(vehicle_controls.router, prefix=settings.API_V1_PREFIX)
+# Include API Routers (Mount with /api and root prefixes for seamless Vercel / serverless compatibility)
+all_routers = [
+    auth.router, vehicles.router, battery.router, energy.router, 
+    charging.router, diagnostics.router, routes.router, 
+    assistant.router, notifications.router, dashboard.router, 
+    vehicle_controls.router
+]
+
+for r in all_routers:
+    app.include_router(r, prefix=settings.API_V1_PREFIX)
+    app.include_router(r)
+
+
+@app.post("/api/geocoding/search", tags=["AI Smart Route & Navigation Engine"])
+@app.post("/geocoding/search", tags=["AI Smart Route & Navigation Engine"])
+async def geocoding_search_direct(req: dict):
+    query = req.get("query", "")
+    limit = req.get("limit", 5)
+    from app.services.nominatim_geocoding_service import search_destination_nominatim
+    results = await search_destination_nominatim(query=query, limit=limit)
+    return results
 
 
 @app.get("/")

@@ -11,7 +11,8 @@ from app.schemas.routes import (
     RouteOptimizeResponse,
     RouteCalculateRequest,
     RouteCalculateResponse,
-    GeocodeResultOut
+    GeocodeResultOut,
+    GeocodeSearchRequest
 )
 from app.schemas.charging import ChargingStationOut
 from app.security.auth import get_current_user
@@ -33,6 +34,15 @@ async def geocode_destination(
     Follows Nominatim rate limits and caching policies.
     """
     results = await search_destination_nominatim(query=query, limit=limit)
+    return [GeocodeResultOut(**item) for item in results]
+
+
+@router.post("/geocode", response_model=List[GeocodeResultOut])
+async def geocode_destination_post(req: GeocodeSearchRequest):
+    """
+    POST variant for geocoding search query.
+    """
+    results = await search_destination_nominatim(query=req.query, limit=req.limit or 5)
     return [GeocodeResultOut(**item) for item in results]
 
 

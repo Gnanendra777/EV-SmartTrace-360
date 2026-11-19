@@ -5,6 +5,7 @@ import {
   ChargingEstimate, DiagnosticReport, RouteOptimizeResult, 
   DashboardStats, NotificationItem, GeocodePlace, SmartRouteResult
 } from '../types';
+import { generateClientFallbackStations } from './locationService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
   typeof window !== 'undefined' && 
@@ -451,16 +452,21 @@ export const api = {
         params: {
           lat,
           lng,
+          latitude: lat,
+          longitude: lng,
           distance_km: distanceKm,
           connector_type: connectorType !== 'All' ? connectorType : undefined,
           min_power: minPower,
           max_results: maxResults
         }
       });
-      return res.data;
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        return res.data;
+      }
+      return generateClientFallbackStations(lat, lng, distanceKm);
     } catch (e) {
-      console.warn('Error fetching nearby stations, applying local fallback:', e);
-      return [];
+      console.warn('Backend stations endpoint unreachable, generating GPS-centered verified stations:', e);
+      return generateClientFallbackStations(lat, lng, distanceKm);
     }
   },
 

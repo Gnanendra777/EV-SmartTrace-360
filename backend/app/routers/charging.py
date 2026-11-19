@@ -161,8 +161,10 @@ def estimate_charging_time(
 
 @router.get("/stations/nearby", response_model=List[ChargingStationOut])
 async def get_nearby_stations(
-    lat: float = Query(..., description="User GPS latitude"),
-    lng: float = Query(..., description="User GPS longitude"),
+    lat: Optional[float] = Query(None, description="User GPS latitude"),
+    lng: Optional[float] = Query(None, description="User GPS longitude"),
+    latitude: Optional[float] = Query(None, description="User GPS latitude alias"),
+    longitude: Optional[float] = Query(None, description="User GPS longitude alias"),
     distance_km: float = Query(25.0, ge=1.0, le=100.0),
     connector_type: Optional[str] = Query(None),
     min_power: Optional[float] = Query(None),
@@ -173,9 +175,18 @@ async def get_nearby_stations(
     Fetch genuine charging stations near the user's real browser GPS location using Open Charge Map.
     Filters by distance, connector type, and charging power.
     """
+    user_lat = lat if lat is not None else latitude
+    user_lng = lng if lng is not None else longitude
+
+    if user_lat is None or user_lng is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Latitude and longitude parameters are required."
+        )
+
     stations = await fetch_open_charge_map_stations(
-        lat=lat,
-        lon=lng,
+        lat=user_lat,
+        lon=user_lng,
         distance_km=distance_km,
         max_results=max_results,
         connector_type=connector_type

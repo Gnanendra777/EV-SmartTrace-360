@@ -55,6 +55,11 @@ class GeocodeResultOut(BaseModel):
     importance: Optional[float] = 0.0
 
 
+class GeocodeSearchRequest(BaseModel):
+    query: str
+    limit: Optional[int] = 5
+
+
 class RouteCalculateRequest(BaseModel):
     origin_lat: float
     origin_lng: float

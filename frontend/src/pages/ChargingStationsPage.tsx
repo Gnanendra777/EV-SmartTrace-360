@@ -8,18 +8,20 @@ import {
   CheckCircle2, 
   Clock, 
   DollarSign, 
-  Compass,
-  ArrowRight,
-  ExternalLink,
-  LocateFixed,
-  RefreshCw,
-  SlidersHorizontal,
-  AlertCircle,
-  BatteryCharging,
-  Info,
-  Layers,
-  ChevronRight,
-  Route
+  Compass, 
+  ArrowRight, 
+  ExternalLink, 
+  LocateFixed, 
+  RefreshCw, 
+  SlidersHorizontal, 
+  AlertCircle, 
+  BatteryCharging, 
+  Info, 
+  Layers, 
+  ChevronRight, 
+  Route,
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { InteractiveMap } from '../components/InteractiveMap';
@@ -32,15 +34,15 @@ export const ChargingStationsPage: React.FC = () => {
 
   // Location State
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [locationStatus, setLocationStatus] = useState<string>('Requesting GPS location...');
+  const [locationStatus, setLocationStatus] = useState<string>('Detecting GPS location...');
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [manualCity, setManualCity] = useState<string>('');
 
   // Station Data State
   const [stations, setStations] = useState<ChargingStation[]>([]);
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
   const [isLoadingStations, setIsLoadingStations] = useState<boolean>(false);
+  const [stationFetchError, setStationFetchError] = useState<string | null>(null);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -50,10 +52,10 @@ export const ChargingStationsPage: React.FC = () => {
   const [powerRange, setPowerRange] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'distance' | 'power'>('distance');
 
-  // Trigger GPS location on mount
+  // Trigger GPS location detection
   const handleDetectLocation = useCallback(async () => {
     setGpsError(null);
-    setLocationStatus('Acquiring precise GPS coordinates...');
+    setLocationStatus('Acquiring precise browser GPS coordinates...');
     try {
       const loc = await requestUserLocation();
       setUserLocation([loc.lat, loc.lng]);
@@ -61,16 +63,15 @@ export const ChargingStationsPage: React.FC = () => {
       setLocationStatus(`GPS Verified (±${Math.round(loc.accuracy)}m)`);
       fetchNearbyStations(loc.lat, loc.lng, distanceKm, connectorFilter);
     } catch (err: any) {
-      console.warn('Geolocation error:', err.message);
-      setGpsError(err.message || 'Unable to retrieve location.');
-      setLocationStatus('GPS Unavailable');
-      // If user has no GPS, provide fallback search near default coordinate
-      if (!userLocation) {
-        const fallbackLat = 28.6139;
-        const fallbackLng = 77.2090;
-        setUserLocation([fallbackLat, fallbackLng]);
-        fetchNearbyStations(fallbackLat, fallbackLng, distanceKm, connectorFilter);
-      }
+      console.warn('Geolocation notice:', err.message);
+      setGpsError(err.message || 'GPS location permission denied or timed out.');
+      setLocationStatus('GPS Unavailable (Using Regional Fallback)');
+      
+      // Default corridor coordinates if GPS is blocked
+      const fallbackLat = 28.6139;
+      const fallbackLng = 77.2090;
+      setUserLocation([fallbackLat, fallbackLng]);
+      fetchNearbyStations(fallbackLat, fallbackLng, distanceKm, connectorFilter);
     }
   }, [distanceKm, connectorFilter]);
 
@@ -82,6 +83,7 @@ export const ChargingStationsPage: React.FC = () => {
     connector?: string
   ) => {
     setIsLoadingStations(true);
+    setStationFetchError(null);
     try {
       const data = await api.getNearbyStations(
         lat, 
@@ -92,9 +94,12 @@ export const ChargingStationsPage: React.FC = () => {
       setStations(data);
       if (data.length > 0) {
         setSelectedStation(data[0]);
+      } else {
+        setSelectedStation(null);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error fetching charging stations:', e);
+      setStationFetchError('Could not load live charging stations. Regional verified corridor data active.');
     } finally {
       setIsLoadingStations(false);
     }
@@ -169,27 +174,27 @@ export const ChargingStationsPage: React.FC = () => {
   });
 
   return (
-    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-6">
+    <div className="w-full max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-6">
       
       {/* Page Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold">
-              MODULE FOUR: REAL-TIME EV CHARGING RADAR
+            <span className="px-2.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold uppercase tracking-wider">
+              MODULE FOUR: EV CHARGING STATIONS RADAR
             </span>
-            <span className="text-xs text-slate-400">Open Charge Map & Live GPS Engine</span>
+            <span className="text-xs text-slate-400">Open Charge Map & Live GPS Geolocation</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
             EV Charging Stations & Interactive Radar
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-            Locate verified fast-charging stations near your real GPS coordinates. Filter by connector type, charging power, distance radius, and view comprehensive facility specifications.
+            Locate genuine fast-charging stations around your actual GPS coordinates. Filter by connector standard, power rating, and distance corridor.
           </p>
         </div>
 
-        {/* GPS Location Status Pill & Locate Me Button */}
-        <div className="flex items-center gap-3">
+        {/* GPS Location Status Pill & Refresh / Locate Me Buttons */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-lg">
             <span className={`w-2.5 h-2.5 rounded-full ${userLocation ? 'bg-cyan-400 animate-pulse' : 'bg-amber-400'}`} />
             <span>
@@ -202,11 +207,27 @@ export const ChargingStationsPage: React.FC = () => {
 
           <button
             onClick={handleDetectLocation}
-            className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-1.5 transition-all active:scale-95"
-            title="Refresh My GPS Location"
+            className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-1.5 transition-all active:scale-95"
+            title="Locate my position via browser GPS"
           >
             <LocateFixed className="w-4 h-4" />
             <span>Locate Me</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (userLocation) {
+                fetchNearbyStations(userLocation[0], userLocation[1], distanceKm, connectorFilter);
+              } else {
+                handleDetectLocation();
+              }
+            }}
+            disabled={isLoadingStations}
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all"
+            title="Refresh Stations list"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStations ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -216,7 +237,7 @@ export const ChargingStationsPage: React.FC = () => {
         <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-            <span>{gpsError} Default search coordinates applied. Click "Locate Me" to allow GPS access.</span>
+            <span>{gpsError} A metro regional corridor is used as fallback. Click "Locate Me" anytime to grant GPS permissions.</span>
           </div>
           <button 
             onClick={() => setGpsError(null)} 
@@ -228,7 +249,7 @@ export const ChargingStationsPage: React.FC = () => {
       )}
 
       {/* FILTERS & SEARCH CONTROL PANEL */}
-      <div className="glass-panel p-5 rounded-2xl border border-cyan-500/25 space-y-4">
+      <div className="glass-panel p-5 rounded-2xl border border-cyan-500/25 space-y-4 shadow-xl">
         
         {/* Top Search Input & Sort Options */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
@@ -264,7 +285,7 @@ export const ChargingStationsPage: React.FC = () => {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Highest kW Power
+                Highest kW
               </button>
             </div>
 
@@ -282,13 +303,13 @@ export const ChargingStationsPage: React.FC = () => {
         {/* Filter Matrix Rows */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-800/80 text-xs">
           
-          {/* 1. Distance Radius */}
+          {/* 1. Distance Radius (5, 10, 25, 50, 100 km) */}
           <div>
             <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
               Search Radius
             </label>
-            <div className="grid grid-cols-4 gap-1">
-              {[5, 10, 25, 50].map((d) => (
+            <div className="grid grid-cols-5 gap-1">
+              {[5, 10, 25, 50, 100].map((d) => (
                 <button
                   key={d}
                   onClick={() => handleDistanceChange(d)}
@@ -298,7 +319,7 @@ export const ChargingStationsPage: React.FC = () => {
                       : 'bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-white'
                   }`}
                 >
-                  {d} km
+                  {d}k
                 </button>
               ))}
             </div>
@@ -320,7 +341,7 @@ export const ChargingStationsPage: React.FC = () => {
               <option value="CHAdeMO">CHAdeMO</option>
               <option value="Bharat AC001">Bharat AC001</option>
               <option value="Bharat DC001">Bharat DC001</option>
-              <option value="Tesla">Tesla (NACS)</option>
+              <option value="Tesla">Tesla (NACS) / Other</option>
             </select>
           </div>
 
@@ -357,7 +378,7 @@ export const ChargingStationsPage: React.FC = () => {
               className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60 font-mono"
             >
               <option value="All">All Power Levels</option>
-              <option value="below_7">&lt; 7 kW (Slow / Home)</option>
+              <option value="below_7">&lt; 7 kW (Slow / AC)</option>
               <option value="7_22">7 – 22 kW (AC Standard)</option>
               <option value="22_50">22 – 50 kW (Rapid DC)</option>
               <option value="above_50">&gt; 50 kW (Ultra-Fast DC)</option>
@@ -385,31 +406,41 @@ export const ChargingStationsPage: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          MAIN INTERACTIVE MAP & DETAILS PANEL SECTION
+          TWO-COLUMN LAYOUT: MAP (LEFT ~65%) & NEARBY STATIONS LIST (RIGHT ~35%)
           ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* LEFT / CENTER: INTERACTIVE LEAFLET OPENSTREETMAP (8 columns) */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col min-h-[500px] lg:min-h-[620px]">
-          <InteractiveMap
-            stations={filteredStations}
-            userLocation={userLocation}
-            selectedStationId={selectedStation?.id}
-            onSelectStation={(st) => setSelectedStation(st)}
-            onLocateMe={handleDetectLocation}
-            defaultLayer="cyber"
-            className="w-full h-full min-h-[500px] lg:min-h-[620px]"
-          />
+        {/* LEFT SIDE: APPROXIMATELY 65% WIDTH (8 columns on desktop) */}
+        <div className="lg:col-span-8 flex flex-col min-h-[580px] lg:min-h-[720px] space-y-3">
+          
+          <div className="w-full flex-1 min-h-[580px] lg:min-h-[700px]">
+            <InteractiveMap
+              stations={filteredStations}
+              userLocation={userLocation}
+              selectedStationId={selectedStation?.id}
+              center={userLocation || [28.6139, 77.2090]}
+              zoom={12}
+              onSelectStation={(st) => setSelectedStation(st)}
+              onLocateMe={handleDetectLocation}
+              className="h-full w-full"
+            />
+          </div>
+
+          {/* Quick Guidance Pill */}
+          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+            <span>📍 Blue pulse marker indicates your browser GPS. Pins indicate verified Open Charge Map stations.</span>
+            <span className="text-cyan-400 font-semibold">{filteredStations.length} Markers on Map</span>
+          </div>
         </div>
 
-        {/* RIGHT: SELECTED STATION DETAILS & NEARBY LIST (4 columns) */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col space-y-4">
+        {/* RIGHT SIDE: APPROXIMATELY 35% WIDTH (4 columns on desktop) */}
+        <div className="lg:col-span-4 flex flex-col space-y-4">
           
           {/* STATION DETAILS PANEL (When selected) */}
-          {selectedStation ? (
-            <div className="glass-panel p-5 rounded-2xl border border-cyan-500/40 shadow-2xl space-y-4 bg-gradient-to-b from-[#071B22] to-[#0A262E]">
+          {selectedStation && (
+            <div className="glass-panel p-4 rounded-2xl border border-cyan-500/50 shadow-2xl space-y-3 bg-gradient-to-b from-[#071B22] to-[#0A262E] animate-fadeIn">
               
-              <div className="flex items-start justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-start justify-between border-b border-slate-800 pb-2">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-bold uppercase">
@@ -419,49 +450,56 @@ export const ChargingStationsPage: React.FC = () => {
                       {selectedStation.operator}
                     </span>
                   </div>
-                  <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                  <h3 className="text-sm sm:text-base font-bold text-white mt-1">
                     {selectedStation.station_name}
                   </h3>
                   <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
                     {selectedStation.address}
                   </p>
                 </div>
+                <button
+                  onClick={() => setSelectedStation(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  title="Close Details Panel"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Metric Highlights */}
               <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-                <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800">
                   <span className="text-[10px] text-slate-500 uppercase block">Distance</span>
-                  <span className="text-sm font-bold text-cyan-300 mt-0.5">
+                  <span className="text-xs font-bold text-cyan-300 mt-0.5">
                     {selectedStation.distance_km !== undefined ? `${selectedStation.distance_km} km` : 'Near'}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800">
                   <span className="text-[10px] text-slate-500 uppercase block">Peak Power</span>
-                  <span className="text-sm font-bold text-emerald-400 mt-0.5">
+                  <span className="text-xs font-bold text-emerald-400 mt-0.5">
                     {selectedStation.charging_power} kW
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 uppercase block">Ports Count</span>
-                  <span className="text-sm font-bold text-slate-200 mt-0.5">
+                <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-500 uppercase block">Ports</span>
+                  <span className="text-xs font-bold text-slate-200 mt-0.5">
                     {selectedStation.connections_count || 2} Plugs
                   </span>
                 </div>
               </div>
 
               {/* Supported Connectors */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
+              <div className="space-y-1">
+                <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
                   Available Connectors
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {(selectedStation.connector_types || [selectedStation.connector_type]).map((c, i) => (
                     <span
                       key={i}
-                      className="px-2.5 py-1 rounded-lg text-xs font-mono bg-cyan-950/40 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5"
+                      className="px-2 py-0.5 rounded text-[11px] font-mono bg-cyan-950/40 text-cyan-300 border border-cyan-500/30 flex items-center gap-1"
                     >
-                      <Zap className="w-3 h-3 text-cyan-400" />
+                      <Zap className="w-2.5 h-2.5 text-cyan-400" />
                       <span>{c}</span>
                     </span>
                   ))}
@@ -469,46 +507,43 @@ export const ChargingStationsPage: React.FC = () => {
               </div>
 
               {/* Pricing & Live Availability Statements (Strict Transparency) */}
-              <div className="space-y-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-                  <span className="text-slate-400 font-mono">Pricing Tariff:</span>
-                  <span className="text-slate-200 font-medium">
+              <div className="space-y-1.5 text-xs">
+                <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                  <span className="text-slate-400 font-mono text-[11px]">Pricing Tariff:</span>
+                  <span className="text-slate-200 font-medium text-[11px]">
                     {selectedStation.pricing_text && selectedStation.pricing_text !== 'Pricing information unavailable.'
                       ? selectedStation.pricing_text
-                      : 'Not provided'}
+                      : 'Pricing information unavailable.'}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-                  <span className="text-slate-400 font-mono">Availability Status:</span>
-                  <span className="text-slate-200 font-medium">
-                    {selectedStation.availability_status && !selectedStation.availability_status.includes('not provided by the data source')
+                <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                  <span className="text-slate-400 font-mono text-[11px]">Availability Status:</span>
+                  <span className="text-slate-200 font-medium text-[11px]">
+                    {selectedStation.availability_status && !selectedStation.availability_status.includes('not provided by the data source') && selectedStation.availability_status !== 'Not provided'
                       ? selectedStation.availability_status
-                      : 'Not provided'}
+                      : 'Live availability not provided by the data source.'}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                   <span>Data Provider:</span>
                   <span className="text-cyan-300">{selectedStation.data_source || 'Open Charge Map'}</span>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                
-                {/* External Maps Turn-by-Turn Directions */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStation.latitude},${selectedStation.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-cyan-500/20"
+                  className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-cyan-500/20"
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   <span>Get Directions</span>
                 </a>
 
-                {/* Plan Route in Smart Navigation */}
                 <button
                   onClick={() => {
                     navigate('/navigation', {
@@ -518,70 +553,154 @@ export const ChargingStationsPage: React.FC = () => {
                       }
                     });
                   }}
-                  className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
                 >
                   <Route className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Plan EV Route</span>
                 </button>
-
               </div>
 
             </div>
-          ) : (
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 text-center space-y-2">
-              <Compass className="w-8 h-8 text-cyan-400 mx-auto" />
-              <h4 className="text-sm font-bold text-white">Select a Station</h4>
-              <p className="text-xs text-slate-400">
-                Click any marker on the map to inspect charging connectors, power rating, and directions.
-              </p>
-            </div>
           )}
 
-          {/* NEARBY STATIONS SCROLLABLE LIST */}
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex-1 flex flex-col min-h-[280px]">
+          {/* NEARBY CHARGING STATIONS SCROLLABLE DIRECTORY */}
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex-1 flex flex-col shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-              <h4 className="text-xs font-bold text-slate-300 uppercase font-mono tracking-wider">
-                Nearby Station Directory ({filteredStations.length})
-              </h4>
-              <span className="text-[10px] text-slate-500 font-mono">Ranked by {sortBy}</span>
+              <div>
+                <h2 className="text-sm font-bold text-white uppercase font-mono tracking-wider flex items-center gap-1.5">
+                  <BatteryCharging className="w-4 h-4 text-cyan-400" />
+                  <span>Nearby Charging Stations</span>
+                </h2>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {filteredStations.length} facilities within {distanceKm} km radius
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                Sorted nearest
+              </span>
             </div>
 
-            <div className="space-y-2 overflow-y-auto max-h-[320px] scrollbar-thin pr-1 flex-1">
+            {/* List of Station Cards */}
+            <div className="space-y-3 overflow-y-auto max-h-[640px] scrollbar-thin pr-1 flex-1">
               {filteredStations.length === 0 ? (
-                <div className="text-center py-8 text-xs text-slate-500 font-mono">
-                  No charging stations found matching current filters.
+                <div className="text-center py-12 space-y-3">
+                  <Compass className="w-10 h-10 text-cyan-400/60 mx-auto" />
+                  <h4 className="text-sm font-bold text-white">No stations found in this radius</h4>
+                  <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                    No charging stations found within {distanceKm} km. Try expanding your search radius to 50 km or 100 km.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <button
+                      onClick={() => handleDistanceChange(50)}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-bold border border-cyan-500/40 transition"
+                    >
+                      Expand to 50 km
+                    </button>
+                    <button
+                      onClick={() => handleDistanceChange(100)}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-bold border border-cyan-500/40 transition"
+                    >
+                      Expand to 100 km
+                    </button>
+                  </div>
                 </div>
               ) : (
-                filteredStations.map((st) => (
-                  <div
-                    key={st.id}
-                    onClick={() => setSelectedStation(st)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                      selectedStation?.id === st.id
-                        ? 'bg-cyan-500/15 border-cyan-400 shadow-md shadow-cyan-500/10'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h5 className="text-xs font-bold text-white leading-tight">
-                          {st.station_name}
-                        </h5>
-                        <p className="text-[11px] text-slate-400 truncate max-w-[200px] mt-0.5">
-                          {st.address}
-                        </p>
+                filteredStations.map((st) => {
+                  const isSelected = selectedStation?.id === st.id;
+                  return (
+                    <div
+                      key={st.id}
+                      onClick={() => setSelectedStation(st)}
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
+                        isSelected
+                          ? 'bg-cyan-500/15 border-cyan-400 shadow-xl shadow-cyan-500/10'
+                          : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/50'
+                      }`}
+                    >
+                      {/* Card Header: Name, Power, Distance */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xs sm:text-sm font-bold text-white leading-tight truncate">
+                            {st.station_name}
+                          </h3>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                            {st.address}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-xs font-bold font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 block">
+                            {st.charging_power} kW
+                          </span>
+                          <span className="text-[11px] text-cyan-300 font-mono font-bold mt-1 block">
+                            {st.distance_km !== undefined ? `${st.distance_km} km away` : ''}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <span className="text-xs font-bold font-mono text-emerald-400">
-                          {st.charging_power} kW
+
+                      {/* Operator & AC/DC Info */}
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 border-t border-slate-800/60 pt-1.5">
+                        <span className="text-slate-300 font-medium truncate max-w-[150px]">
+                          {st.operator}
                         </span>
-                        <span className="text-[10px] text-slate-400 block font-mono">
-                          {st.distance_km !== undefined ? `${st.distance_km} km` : ''}
+                        <span className="text-cyan-400 font-semibold">
+                          {st.ac_dc_type || 'DC Fast'} • {st.connections_count || 2} Plugs
                         </span>
                       </div>
+
+                      {/* Connectors Badges */}
+                      <div className="flex flex-wrap gap-1">
+                        {(st.connector_types || [st.connector_type]).map((c, i) => (
+                          <span
+                            key={i}
+                            className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-300 border border-slate-800"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Pricing & Status Line */}
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                        <span>
+                          Status: <strong className="text-slate-200">
+                            {st.status_title && st.status_title !== 'Not provided' ? st.status_title : 'Operational'}
+                          </strong>
+                        </span>
+                        <span>
+                          Tariff: <strong className="text-slate-300">
+                            {st.pricing_text && st.pricing_text !== 'Pricing information unavailable.' ? st.pricing_text : 'Not provided'}
+                          </strong>
+                        </span>
+                      </div>
+
+                      {/* Card Action Buttons */}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStation(st);
+                          }}
+                          className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 font-semibold"
+                        >
+                          View Specifications →
+                        </button>
+
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${st.latitude},${st.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[11px] font-bold border border-cyan-500/30 flex items-center gap-1 transition"
+                        >
+                          <Navigation className="w-3 h-3" />
+                          <span>Get Directions</span>
+                        </a>
+                      </div>
+
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

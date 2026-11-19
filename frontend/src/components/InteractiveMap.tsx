@@ -139,11 +139,21 @@ const MapController: React.FC<{
   userLocation?: [number, number] | null;
   destinationLocation?: [number, number] | null;
   waypointLocation?: [number, number] | null;
+  selectedStationId?: number | null;
   triggerFit?: number 
-}> = ({ center, waypoints, stations, userLocation, destinationLocation, waypointLocation, triggerFit }) => {
+}> = ({ center, waypoints, stations, userLocation, destinationLocation, waypointLocation, selectedStationId, triggerFit }) => {
   const map = useMap();
 
   useEffect(() => {
+    // If a specific station was selected by the user, smoothly focus on it
+    if (selectedStationId && stations && stations.length > 0) {
+      const selected = stations.find(s => s.id === selectedStationId);
+      if (selected) {
+        map.flyTo([selected.latitude, selected.longitude], Math.max(map.getZoom(), 14), { duration: 0.8 });
+        return;
+      }
+    }
+
     // If route waypoints exist, fit route bounds
     if (waypoints && waypoints.length > 1) {
       const bounds = L.latLngBounds(waypoints as [number, number][]);
@@ -164,7 +174,7 @@ const MapController: React.FC<{
     } else if (center) {
       map.panTo(center);
     }
-  }, [center, waypoints, stations, userLocation, destinationLocation, waypointLocation, triggerFit, map]);
+  }, [center, waypoints, stations, userLocation, destinationLocation, waypointLocation, selectedStationId, triggerFit, map]);
 
   return null;
 };
@@ -283,6 +293,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           userLocation={userLocation}
           destinationLocation={destinationLocation}
           waypointLocation={waypointLocation}
+          selectedStationId={selectedStationId}
           triggerFit={triggerFit} 
         />
 
