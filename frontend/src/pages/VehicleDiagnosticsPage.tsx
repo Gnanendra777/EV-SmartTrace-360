@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, ShieldAlert, Cpu, Battery, Thermometer, Zap, Layers, 
   Disc, Wind, Lock, Unlock, Radio, AlertTriangle, CheckCircle2, 
-  RotateCw, RefreshCw, Sliders, ChevronRight, Activity, BellRing
+  RotateCw, RefreshCw, Sliders, ChevronRight, Activity, BellRing,
+  BatteryCharging, Gauge, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -24,6 +25,7 @@ export const VehicleDiagnosticsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [commandMsg, setCommandMsg] = useState<{ text: string; isError?: boolean } | null>(null);
   const [executingCmd, setExecutingCmd] = useState(false);
+  const [selectedComponentId, setSelectedComponentId] = useState<string>('battery');
 
   // Fetch all Digital Twin Telemetry
   const fetchTelemetry = useCallback(async () => {
@@ -91,7 +93,7 @@ export const VehicleDiagnosticsPage: React.FC = () => {
             Vehicle Diagnostics & 360° Digital Twin
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-            Inspect your electric vehicle in full 360° 3D with X-ray cutaway view. Monitor real-time TPMS tyre pressures, high-voltage battery health, thermal cooling loops, climate controls, and cabin safety restraints.
+            Inspect your electric vehicle in full 360° 3D with transparent wireframe view. Monitor high-voltage battery pack architecture, electric traction motor, cooling loops, 12V DC-DC system, and cabin safety restraints.
           </p>
         </div>
 
@@ -126,19 +128,204 @@ export const VehicleDiagnosticsPage: React.FC = () => {
         </div>
       )}
 
-      {/* 360° 3D VEHICLE DIGITAL TWIN CANVAS COMPONENT */}
-      <VehicleDigitalTwin3D
-        vehicleName={activeVehicle?.vehicle_name || 'CyberPulse GT'}
-        soc={activeVehicle?.current_battery_pct || 70}
-        soh={fullHealth?.soh || 96}
-        packVoltage={fullHealth?.pack_voltage || 398.5}
-        packTemp={fullHealth?.pack_temp_c || 28.5}
-        tyres={tyres}
-        doors={doors}
-        seatbelts={seatbelts}
-        climate={climate}
-        healthComponents={fullHealth?.components || []}
-      />
+      {/* =========================================================================
+          SECTION: 360° DIGITAL TWIN & POWERTRAIN SUBSYSTEM DIAGNOSTICS
+          PROFESSIONAL TWO-COLUMN LAYOUT (55% LEFT 3D MODEL, 45% RIGHT DIAGNOSTICS)
+          ========================================================================= */}
+      <div className="glass-panel p-5 sm:p-6 lg:p-7 rounded-2xl relative overflow-hidden border border-cyan-500/25 space-y-5">
+        
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 shadow-lg shadow-cyan-500/10">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                  Powertrain Subsystems & 3D Digital Twin
+                </h2>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-bold uppercase">
+                  CAN-Bus Active
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Futuristic transparent wireframe electric car with visible high-voltage battery modules, electric traction motor, and thermal conduits.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Active Vehicle: <strong className="text-cyan-300">{activeVehicle?.vehicle_name || 'CyberPulse GT'}</strong></span>
+          </div>
+        </div>
+
+        {/* TWO-COLUMN GRID: LEFT = 3D VEHICLE (55%), RIGHT = DIAGNOSTIC CARDS (45%) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          
+          {/* LEFT SIDE: 3D VEHICLE VISUALIZATION (~58% on desktop, centered & prominent) */}
+          <div className="lg:col-span-7 xl:col-span-7 flex flex-col min-h-[500px] lg:min-h-[560px]">
+            <VehicleDigitalTwin3D
+              vehicleName={activeVehicle?.vehicle_name || 'CyberPulse GT'}
+              soc={activeVehicle?.current_battery_pct || 70}
+              soh={fullHealth?.soh || 96}
+              packVoltage={fullHealth?.pack_voltage || 401.5}
+              packTemp={fullHealth?.pack_temp_c || 28.5}
+              selectedCompId={selectedComponentId}
+              onComponentClick={(compId) => setSelectedComponentId(compId)}
+              tyres={tyres}
+              doors={doors}
+              seatbelts={seatbelts}
+              climate={climate}
+              healthComponents={fullHealth?.components || []}
+              className="w-full h-full min-h-[500px] lg:min-h-[560px]"
+            />
+          </div>
+
+          {/* RIGHT SIDE: EXISTING SUBSYSTEM HEALTH INFORMATION (~42% on desktop, compact & aligned) */}
+          <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-between space-y-3.5">
+            
+            {/* CARD 1: ELECTRIC TRACTION MOTOR */}
+            <div 
+              onClick={() => setSelectedComponentId('motor')}
+              className={`p-4 sm:p-4.5 rounded-xl border transition-all cursor-pointer ${
+                selectedComponentId === 'motor'
+                  ? 'bg-cyan-500/10 border-cyan-400 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/40'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse shadow-md shadow-emerald-400/50 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Electric Traction Motor</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      56.2°C • Permanent Magnet Synchronous • Inverter PWM 98.2%
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold uppercase">
+                    NORMAL
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono mt-1">96 / 100</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 2: COOLING & THERMAL LOOP */}
+            <div 
+              onClick={() => setSelectedComponentId('cooling')}
+              className={`p-4 sm:p-4.5 rounded-xl border transition-all cursor-pointer ${
+                selectedComponentId === 'cooling'
+                  ? 'bg-amber-500/10 border-amber-400 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/40'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-amber-400 animate-ping shadow-md shadow-amber-400/50 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Cooling & Thermal Loop</span>
+                    </h4>
+                    <p className="text-[11px] text-amber-300/90 font-mono mt-0.5">
+                      P0A93-00 Flow Restriction Notice • Coolant 42.0°C • 1.4 Bar
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-bold uppercase">
+                    ATTENTION
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono mt-1">82 / 100</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: HIGH-VOLTAGE BATTERY PACK (MID-CHASSIS) */}
+            <div 
+              onClick={() => setSelectedComponentId('battery')}
+              className={`p-4 sm:p-4.5 rounded-xl border transition-all cursor-pointer ${
+                selectedComponentId === 'battery'
+                  ? 'bg-emerald-500/10 border-emerald-400 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/40'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse shadow-md shadow-emerald-400/50 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <Battery className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>High-Voltage Battery Pack</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      60 kWh NMC • 401.5V • 28.5°C • Cell Delta 6.5 mV
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold uppercase">
+                    NORMAL (98/100)
+                  </span>
+                  <span className="text-[10px] text-cyan-300 font-mono mt-1 font-bold">
+                    {activeVehicle?.current_battery_pct || 70}% SOC
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 4: 12V DC-DC & CCS2 CHARGE INLET */}
+            <div 
+              onClick={() => setSelectedComponentId('charging_port')}
+              className={`p-4 sm:p-4.5 rounded-xl border transition-all cursor-pointer ${
+                selectedComponentId === 'charging_port' || selectedComponentId === 'electronics'
+                  ? 'bg-cyan-500/10 border-cyan-400 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/40'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-md shadow-cyan-400/50 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <BatteryCharging className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>12V DC-DC & CCS2 Charge Inlet</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      13.8V Auxiliary • CCS2 Port Ready • Inverter 93.4%
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-mono bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded font-bold uppercase">
+                    NORMAL
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono mt-1">95 / 100</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Subsystem Telemetry Status Footer */}
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+              <div className="flex items-center gap-2">
+                <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                <span>CAN-Bus Telemetry Loop: Active</span>
+              </div>
+              <span className="text-slate-500">0 Critical Faults</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
 
       {/* THREE HARDWARE CONTROLS & MONITORING PANELS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -462,4 +649,5 @@ export const VehicleDiagnosticsPage: React.FC = () => {
     </div>
   );
 };
+
 export default VehicleDiagnosticsPage;
