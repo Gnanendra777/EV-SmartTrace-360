@@ -9,11 +9,12 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api"
     
     # Database Configuration (Defaults to SQLite for instant local dev, uses MySQL when DATABASE_URL is set)
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", 
-        "sqlite:///./ev_smarttrace.db"
-    )
-    SQLITE_FALLBACK_URL: str = "sqlite:///./ev_smarttrace.db"
+    # When deployed on serverless (e.g. Vercel), /tmp is the only writable directory.
+    _is_serverless: bool = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+    _default_sqlite: str = "sqlite:////tmp/ev_smarttrace.db" if _is_serverless else "sqlite:///./ev_smarttrace.db"
+
+    DATABASE_URL: str = os.getenv("DATABASE_URL", _default_sqlite)
+    SQLITE_FALLBACK_URL: str = _default_sqlite
     
     # JWT & Security
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "ev_smarttrace_super_secure_jwt_secret_key_2026_x99")

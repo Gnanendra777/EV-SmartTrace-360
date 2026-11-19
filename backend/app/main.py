@@ -5,6 +5,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
+# Ensure backend directory and root directory are in sys.path
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_backend_dir = os.path.dirname(_current_dir)
+_root_dir = os.path.dirname(_backend_dir)
+for _p in [_backend_dir, _root_dir]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 from app.config import settings
 from app.database import Base, engine, SessionLocal
 from app.models import (
@@ -207,6 +215,7 @@ app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")
+@app.get("/api")
 def root():
     return {
         "platform": settings.PROJECT_NAME,

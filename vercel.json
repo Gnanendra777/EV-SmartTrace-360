@@ -1,11 +1,34 @@
 {
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://api.evsmarttrace.com/api/$1"
+      "source": "/api",
+      "destination": "/api"
     },
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/docs",
+      "destination": "/docs"
+    },
+    {
+      "source": "/docs/(.*)",
+      "destination": "/docs/$1"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/openapi.json"
+    },
+    {
+      "source": "/redoc",
+      "destination": "/redoc"
+    },
+    {
+      "source": "/((?!api|docs|openapi.json|redoc).*)",
       "destination": "/index.html"
     }
   ]

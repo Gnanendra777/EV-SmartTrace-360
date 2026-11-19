@@ -5,11 +5,11 @@ import httpx
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend")))
 
-from app.main import app, seed_initial_data
+from app.main import app as target_app, seed_initial_data
 
 async def run_tests():
     seed_initial_data()
-    transport = httpx.ASGITransport(app=app)
+    transport = httpx.ASGITransport(app=target_app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
         print("Testing root endpoint...")
         r = await client.get("/")
