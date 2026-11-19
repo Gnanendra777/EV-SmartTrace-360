@@ -170,8 +170,45 @@ async def run_tests():
         assert "Sorry, I can currently assist with the EV SmartTrace 360 cockpit queries only. Please select one of the Sample Cockpit Queries to continue." in q_unsupported.json()["response_text"]
         print("Unsupported Query -> PASS:", q_unsupported.json()["response_text"])
 
+        print("\n--- Testing Open Charge Map & Smart Navigation Endpoints ---")
+        # 1. Nearby charging stations with real coordinates
+        stations_res = await client.get("/api/stations/nearby?lat=28.6139&lng=77.2090&distance_km=25")
+        assert stations_res.status_code == 200
+        st_data = stations_res.json()
+        assert len(st_data) > 0
+        print(f"Nearby Stations -> PASS: Retrieved {len(st_data)} stations. First: {st_data[0]['station_name']} ({st_data[0]['distance_km']} km)")
+
+        # 2. Station search
+        st_search = await client.get("/api/stations/search?query=hub&latitude=28.6139&longitude=77.2090")
+        assert st_search.status_code == 200
+        print(f"Station Search -> PASS: Found {len(st_search.json())} matching stations")
+
+        # 3. Destination geocoding
+        geo_res = await client.get("/api/routes/geocode?query=Delhi")
+        assert geo_res.status_code == 200
+        print(f"Destination Geocode -> PASS: Returned {len(geo_res.json())} results")
+
+        # 4. Smart EV Route Calculation (OSRM + Battery consumption)
+        route_calc = await client.post("/api/routes/calculate", json={
+            "origin_lat": 28.6139,
+            "origin_lng": 77.2090,
+            "destination_lat": 28.4595,
+            "destination_lng": 77.0266,
+            "origin_name": "New Delhi Central",
+            "destination_name": "Gurugram Cyber Hub",
+            "vehicle_id": vehicle_id,
+            "current_battery_pct": 70.0,
+            "desired_arrival_pct": 15.0
+        }, headers=headers)
+        assert route_calc.status_code == 200
+        route_data = route_calc.json()
+        assert route_data["distance_km"] > 0
+        assert len(route_data["geometry"]) > 0
+        print(f"Smart EV Route Calculate -> PASS: Distance: {route_data['distance_km']} km, Duration: {route_data['duration_formatted']}, Arrival SOC: {route_data['estimated_arrival_soc']}%, Stops Found: {len(route_data['recommended_charging_stops'])}")
+
         print("\n=======================================================")
         print("ALL SMARTVOICE COCKPIT QUERIES AND MULTILINGUAL TESTS PASSED!")
+        print("ALL CHARGING STATIONS & SMART NAVIGATION TESTS PASSED!")
         print("=======================================================")
 
 if __name__ == "__main__":

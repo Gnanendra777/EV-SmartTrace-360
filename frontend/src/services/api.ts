@@ -3,7 +3,7 @@ import {
   User, Vehicle, BatteryReading, RangePrediction, 
   EnergyAnalytics, ChargingStation, ChargingSession, 
   ChargingEstimate, DiagnosticReport, RouteOptimizeResult, 
-  DashboardStats, NotificationItem 
+  DashboardStats, NotificationItem, GeocodePlace, SmartRouteResult
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
@@ -436,6 +436,92 @@ export const api = {
         effective_power_kw: 150
       };
     }
+  },
+
+  getNearbyStations: async (
+    lat: number,
+    lng: number,
+    distanceKm: number = 25,
+    connectorType?: string,
+    minPower?: number,
+    maxResults: number = 50
+  ): Promise<ChargingStation[]> => {
+    try {
+      const res = await apiClient.get('/stations/nearby', {
+        params: {
+          lat,
+          lng,
+          distance_km: distanceKm,
+          connector_type: connectorType !== 'All' ? connectorType : undefined,
+          min_power: minPower,
+          max_results: maxResults
+        }
+      });
+      return res.data;
+    } catch (e) {
+      console.warn('Error fetching nearby stations, applying local fallback:', e);
+      return [];
+    }
+  },
+
+  searchStations: async (
+    query: string,
+    lat?: number,
+    lng?: number
+  ): Promise<ChargingStation[]> => {
+    try {
+      const res = await apiClient.get('/stations/search', {
+        params: { query, latitude: lat, longitude: lng }
+      });
+      return res.data;
+    } catch (e) {
+      console.warn('Error searching stations:', e);
+      return [];
+    }
+  },
+
+  getStationDetails: async (
+    stationId: number,
+    lat?: number,
+    lng?: number
+  ): Promise<ChargingStation | null> => {
+    try {
+      const res = await apiClient.get(`/stations/${stationId}`, {
+        params: { latitude: lat, longitude: lng }
+      });
+      return res.data;
+    } catch (e) {
+      console.warn('Error fetching station details:', e);
+      return null;
+    }
+  },
+
+  geocode: async (query: string): Promise<GeocodePlace[]> => {
+    try {
+      const res = await apiClient.get('/routes/geocode', {
+        params: { query, limit: 5 }
+      });
+      return res.data;
+    } catch (e) {
+      console.warn('Geocoding error:', e);
+      return [];
+    }
+  },
+
+  calculateSmartRoute: async (params: {
+    origin_lat: number;
+    origin_lng: number;
+    destination_lat: number;
+    destination_lng: number;
+    origin_name?: string;
+    destination_name?: string;
+    waypoints?: number[][];
+    vehicle_id?: number;
+    current_battery_pct?: number;
+    desired_arrival_pct?: number;
+  }): Promise<SmartRouteResult> => {
+    const res = await apiClient.post('/routes/calculate', params);
+    return res.data;
   },
 
   getStations: async (connectorType?: string, minPower?: number): Promise<ChargingStation[]> => {

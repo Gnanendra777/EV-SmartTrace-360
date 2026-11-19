@@ -14,6 +14,11 @@ from app.schemas.charging import (
     ChargingStationOut
 )
 from app.security.auth import get_current_user
+from app.services.open_charge_map_service import (
+    fetch_open_charge_map_stations,
+    haversine_distance,
+    get_fallback_stations
+)
 
 router = APIRouter(tags=["Charging & Stations"])
 
@@ -126,9 +131,8 @@ def estimate_charging_time(
     available_power = charging_power_kw if charging_power_kw is not None else float(vehicle.max_charging_power)
     effective_power = min(available_power, float(vehicle.max_charging_power))
 
-    # Constant Current / Constant Voltage (CC-CV) taper taper factor above 80% SOC
+    # Constant Current / Constant Voltage (CC-CV) taper factor above 80% SOC
     if target_soc > 80.0:
-        # Power ramps down to preserve cell anode health in top 20%
         effective_power = effective_power * 0.72
 
     hours = metered_energy / max(effective_power, 1.0)
@@ -156,36 +160,85 @@ def estimate_charging_time(
 
 
 @router.get("/stations/nearby", response_model=List[ChargingStationOut])
-def get_nearby_stations(
-    lat: Optional[float] = Query(37.7749),
-    lng: Optional[float] = Query(-122.4194),
+async def get_nearby_stations(
+    lat: float = Query(..., description="User GPS latitude"),
+    lng: float = Query(..., description="User GPS longitude"),
+    distance_km: float = Query(25.0, ge=1.0, le=100.0),
     connector_type: Optional[str] = Query(None),
     min_power: Optional[float] = Query(None),
+    max_results: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    query = db.query(ChargingStation)
-    if connector_type and connector_type != "All":
-        query = query.filter(ChargingStation.connector_type.ilike(f"%{connector_type}%"))
+    """
+    Fetch genuine charging stations near the user's real browser GPS location using Open Charge Map.
+    Filters by distance, connector type, and charging power.
+    """
+    stations = await fetch_open_charge_map_stations(
+        lat=lat,
+        lon=lng,
+        distance_km=distance_km,
+        max_results=max_results,
+        connector_type=connector_type
+    )
+
+    # Filter min_power if provided
     if min_power:
-        query = query.filter(ChargingStation.charging_power >= min_power)
+        stations = [s for s in stations if s["charging_power"] >= min_power]
 
-    stations = query.all()
-
-    # Calculate distance for each station
-    results = []
-    for s in stations:
-        # Distance calculation
-        dlat = math.radians(s.latitude - lat)
-        dlon = math.radians(s.longitude - lng)
-        a = (math.sin(dlat / 2) ** 2 +
-             math.cos(math.radians(lat)) * math.cos(math.radians(s.latitude)) * math.sin(dlon / 2) ** 2)
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        dist_km = round(6371.0 * c, 1)
-
-        station_dict = ChargingStationOut.from_orm(s)
-        station_dict.distance_km = dist_km
-        results.append(station_dict)
-
-    # Sort by nearest
-    results.sort(key=lambda x: x.distance_km or 999.0)
+    # Map to schema
+    results = [ChargingStationOut(**s) for s in stations]
     return results
+
+
+@router.get("/stations/search", response_model=List[ChargingStationOut])
+async def search_stations(
+    query: str = Query(..., min_length=2),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    distance_km: float = Query(50.0)
+):
+    """Search for charging stations matching query or location."""
+    user_lat = latitude if latitude is not None else 28.6139
+    user_lon = longitude if longitude is not None else 77.2090
+
+    stations = await fetch_open_charge_map_stations(
+        lat=user_lat,
+        lon=user_lon,
+        distance_km=distance_km,
+        max_results=60
+    )
+
+    q = query.strip().lower()
+    filtered = [
+        s for s in stations
+        if q in s["station_name"].lower() or q in s["address"].lower() or q in s["operator"].lower()
+    ]
+    return [ChargingStationOut(**s) for s in filtered]
+
+
+@router.get("/stations/{station_id}", response_model=ChargingStationOut)
+async def get_station_details(
+    station_id: int,
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Retrieve details for a specific charging station."""
+    # Check database first
+    db_station = db.query(ChargingStation).filter(ChargingStation.id == station_id).first()
+    if db_station:
+        return ChargingStationOut.from_orm(db_station)
+
+    # Fallback search around coordinates
+    user_lat = latitude if latitude is not None else 28.6139
+    user_lon = longitude if longitude is not None else 77.2090
+    stations = await fetch_open_charge_map_stations(lat=user_lat, lon=user_lon, distance_km=50.0)
+
+    for s in stations:
+        if s["id"] == station_id:
+            return ChargingStationOut(**s)
+
+    if stations:
+        return ChargingStationOut(**stations[0])
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Charging station not found.")

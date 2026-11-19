@@ -45,3 +45,46 @@ class RouteOptimizeResponse(BaseModel):
     estimated_available_energy_kwh: float
     routes: List[RouteOption]
     recommended_route_id: str
+
+
+class GeocodeResultOut(BaseModel):
+    display_name: str
+    lat: float
+    lon: float
+    type: str
+    importance: Optional[float] = 0.0
+
+
+class RouteCalculateRequest(BaseModel):
+    origin_lat: float
+    origin_lng: float
+    destination_lat: float
+    destination_lng: float
+    origin_name: Optional[str] = "Current Location"
+    destination_name: Optional[str] = "Destination"
+    waypoints: Optional[List[List[float]]] = None # [[lat, lon], ...]
+    vehicle_id: Optional[int] = None
+    current_battery_pct: Optional[float] = None
+    desired_arrival_pct: Optional[float] = 15.0
+
+
+class RouteCalculateResponse(BaseModel):
+    origin_lat: float
+    origin_lng: float
+    destination_lat: float
+    destination_lng: float
+    origin_name: str
+    destination_name: str
+    distance_km: float
+    duration_minutes: int
+    duration_formatted: str
+    geometry: List[List[float]] # [[lat, lng], ...] for Leaflet
+    estimated_energy_kwh: float
+    estimated_battery_pct_used: float
+    estimated_arrival_soc: float
+    battery_sufficient: bool
+    charging_needed: bool
+    reserve_status: str
+    assumptions_disclaimer: str
+    recommended_charging_stops: List[ChargingStationOut]
+    charging_stop_included: Optional[ChargingStationOut] = None

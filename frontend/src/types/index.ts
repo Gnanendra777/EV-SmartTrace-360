@@ -94,10 +94,47 @@ export interface ChargingStation {
   operator: string;
   charging_power: number;
   connector_type: string;
-  availability_status: string;
-  pricing_per_kwh: number;
+  connector_types?: string[];
+  availability_status?: string;
+  pricing_per_kwh?: number | null;
+  pricing_text?: string;
   distance_km?: number;
+  is_operational?: boolean;
+  status_title?: string;
+  ac_dc_type?: string;
+  connections_count?: number;
+  data_source?: string;
   last_updated?: string;
+}
+
+export interface GeocodePlace {
+  display_name: string;
+  lat: number;
+  lon: number;
+  type: string;
+  importance?: number;
+}
+
+export interface SmartRouteResult {
+  origin_lat: number;
+  origin_lng: number;
+  destination_lat: number;
+  destination_lng: number;
+  origin_name: string;
+  destination_name: string;
+  distance_km: number;
+  duration_minutes: number;
+  duration_formatted: string;
+  geometry: number[][]; // [[lat, lng], ...]
+  estimated_energy_kwh: number;
+  estimated_battery_pct_used: number;
+  estimated_arrival_soc: number;
+  battery_sufficient: boolean;
+  charging_needed: boolean;
+  reserve_status: string;
+  assumptions_disclaimer: string;
+  recommended_charging_stops: ChargingStation[];
+  charging_stop_included?: ChargingStation | null;
 }
 
 export interface ChargingSession {

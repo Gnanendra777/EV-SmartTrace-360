@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -12,10 +12,17 @@ class ChargingStationOut(BaseModel):
     operator: str
     charging_power: float
     connector_type: str
-    availability_status: str
-    pricing_per_kwh: float
+    connector_types: Optional[List[str]] = []
+    availability_status: Optional[str] = "Live availability not provided by the data source."
+    pricing_per_kwh: Optional[float] = None
+    pricing_text: Optional[str] = "Pricing information unavailable."
     distance_km: Optional[float] = None
-    last_updated: Optional[datetime] = None
+    is_operational: Optional[bool] = True
+    status_title: Optional[str] = "Operational"
+    ac_dc_type: Optional[str] = "AC/DC"
+    connections_count: Optional[int] = 1
+    data_source: Optional[str] = "Open Charge Map"
+    last_updated: Optional[str] = None
 
     class Config:
         from_attributes = True
