@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPEN_CHARGE_MAP_API_KEY: str = os.getenv("OPEN_CHARGE_MAP_API_KEY", "")
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
+    MAPS_PROVIDER: str = os.getenv("MAPS_PROVIDER", "open")
     
     # CORS
     ALLOWED_ORIGINS: List[str] = [
@@ -44,7 +45,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
-        "*"
+        "https://evsmarttrace.vercel.app",
+        "https://ev-smarttrace-360.vercel.app",
     ]
 
     class Config:
