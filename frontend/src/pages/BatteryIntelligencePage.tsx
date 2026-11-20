@@ -75,18 +75,9 @@ export const BatteryIntelligencePage: React.FC = () => {
       
       {/* Header */}
       <div>
-        <div className="flex items-center space-x-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            MODULE ONE: AI BATTERY INTELLIGENCE
-          </span>
-          <span className="text-xs text-slate-400">Random Forest Telemetry Estimator</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
           Battery Performance & Dynamic Range Predictor
         </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-          Real-time analysis of State of Charge, cathode degradation (SOH), pack thermal envelope, and machine learning range prediction.
-        </p>
       </div>
 
       {/* Primary Battery Telemetry Cards */}
@@ -160,13 +151,7 @@ export const BatteryIntelligencePage: React.FC = () => {
                 Random Forest Inference Simulator
               </h3>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Simulate driving conditions dynamically to observe aerodynamic drag, HVAC draw, and payload effects.
-            </p>
           </div>
-          <span className="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-800">
-            Model: 120-Tree Ensemble (R² 0.944)
-          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

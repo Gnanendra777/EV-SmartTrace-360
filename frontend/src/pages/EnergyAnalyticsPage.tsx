@@ -81,13 +81,7 @@ export const EnergyAnalyticsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              MODULE TWO: SMART CHARGING & ENERGY ANALYTICS
-            </span>
-            <span className="text-xs text-slate-400">Metered Power & Anomaly Detection</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             Energy Consumption & Charging Economics
           </h1>
         </div>
@@ -100,38 +94,6 @@ export const EnergyAnalyticsPage: React.FC = () => {
           <span>Export CSV Report</span>
         </button>
       </div>
-
-      {/* Isolation Forest Anomaly Detection Banner */}
-      {analytics?.anomaly_detection && (
-        <div className={`p-4 rounded-2xl glass-panel border flex items-start space-x-3.5 ${
-          analytics.anomaly_detection.is_anomaly
-            ? 'border-amber-500/40 bg-amber-500/5'
-            : 'border-emerald-500/30 bg-emerald-500/5'
-        }`}>
-          {analytics.anomaly_detection.is_anomaly ? (
-            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-          ) : (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-          )}
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
-                Isolation Forest Anomaly Inspector
-              </span>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                analytics.anomaly_detection.is_anomaly
-                  ? 'bg-amber-500/20 text-amber-300'
-                  : 'bg-emerald-500/20 text-emerald-300'
-              }`}>
-                Score: {analytics.anomaly_detection.anomaly_score} ({analytics.anomaly_detection.severity})
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {analytics.anomaly_detection.explanation}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,9 +151,6 @@ export const EnergyAnalyticsPage: React.FC = () => {
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
               Smart Charging Duration & Cost Estimator
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Formulas: Net Energy = Capacity × (Target SOC - Current SOC) / 100 | Duration = Net Energy / (Power × 92% eff)
-            </p>
           </div>
           <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
             Current SOC: {activeVehicle?.current_battery_pct}%

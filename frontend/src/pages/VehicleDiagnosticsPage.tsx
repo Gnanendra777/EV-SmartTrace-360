@@ -83,18 +83,9 @@ export const VehicleDiagnosticsPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-              MODULE THREE: 360° DIGITAL TWIN & REAL-TIME VEHICLE CONTROLS
-            </span>
-            <span className="text-xs text-slate-400">Live CAN-Bus Hardware Telemetry</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             Vehicle Diagnostics & 360° Digital Twin
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-            Inspect your electric vehicle in full 360° 3D with transparent wireframe view. Monitor high-voltage battery pack architecture, electric traction motor, cooling loops, 12V DC-DC system, and cabin safety restraints.
-          </p>
         </div>
 
         {/* Live Status Pill & Refresh Button */}
@@ -149,9 +140,6 @@ export const VehicleDiagnosticsPage: React.FC = () => {
                   CAN-Bus Active
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Futuristic transparent wireframe electric car with visible high-voltage battery modules, electric traction motor, and thermal conduits.
-              </p>
             </div>
           </div>
 
