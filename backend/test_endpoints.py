@@ -211,9 +211,42 @@ async def run_tests():
         assert len(route_data["geometry"]) > 0
         print(f"Smart EV Route Calculate -> PASS: Distance: {route_data['distance_km']} km, Duration: {route_data['duration_formatted']}, Arrival SOC: {route_data['estimated_arrival_soc']}%, Stops Found: {len(route_data['recommended_charging_stops'])}")
 
+        print("\n--- Testing EV Charging Cockpit Endpoints ---")
+        # 5. Create Charging Session
+        new_session_res = await client.post("/api/charging/sessions", json={
+            "vehicle_id": vehicle_id,
+            "start_time": "2026-11-20T10:00:00Z",
+            "end_time": "2026-11-20T10:45:00Z",
+            "start_soc": 25.0,
+            "end_soc": 80.0,
+            "energy_kwh": 38.5,
+            "charging_power": 60.0,
+            "electricity_tariff": 15.0,
+            "session_status": "completed"
+        }, headers=headers)
+        assert new_session_res.status_code == 201
+        new_session = new_session_res.json()
+        assert new_session["total_cost"] == 577.5 # 38.5 * 15.0
+        print(f"Create Charging Session -> PASS: ID: {new_session['id']}, Energy: {new_session['energy_kwh']} kWh, Total Cost: ₹{new_session['total_cost']}")
+
+        # 6. Get Charging Sessions
+        sessions_res = await client.get(f"/api/charging/{vehicle_id}/sessions", headers=headers)
+        assert sessions_res.status_code == 200
+        sessions_list = sessions_res.json()
+        assert len(sessions_list) > 0
+        print(f"Get Charging Sessions -> PASS: Retrieved {len(sessions_list)} sessions for vehicle {vehicle_id}")
+
+        # 7. Get Charging Estimate
+        estimate_res = await client.get(f"/api/charging/{vehicle_id}/estimate?target_soc=85.0&charging_power_kw=150.0&tariff=15.0", headers=headers)
+        assert estimate_res.status_code == 200
+        est_data = estimate_res.json()
+        assert est_data["target_soc"] == 85.0
+        print(f"Charging Estimate -> PASS: Duration: {est_data['estimated_duration_formatted']}, Req Energy: {est_data['required_energy_kwh']} kWh")
+
         print("\n=======================================================")
         print("ALL SMARTVOICE COCKPIT QUERIES AND MULTILINGUAL TESTS PASSED!")
-        print("ALL CHARGING STATIONS & SMART NAVIGATION TESTS PASSED!")
+        print("ALL CHARGING STATIONS & SMART ROUTE TESTS PASSED!")
+        print("ALL EV CHARGING COCKPIT & SESSIONS TESTS PASSED!")
         print("=======================================================")
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
     { name: 'Energy Analytics', path: '/energy', icon: Activity },
     { name: 'Vehicle Diagnostics', path: '/diagnostics', icon: ShieldAlert },
     { name: 'Charging Stations', path: '/stations', icon: MapPin },
-    { name: 'Smart Navigation', path: '/navigation', icon: Navigation },
+    { name: 'EV Charging', path: '/charging', icon: Zap },
     { name: 'SmartVoice', path: '/smartvoice', icon: Mic },
     { name: 'Reports', path: '/reports', icon: FileText },
   ];

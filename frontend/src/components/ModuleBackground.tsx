@@ -64,15 +64,25 @@ const MODULE_THEMES: Record<string, ModuleThemeConfig> = {
     glowColor: 'rgba(0, 255, 157, 0.16)',
     accentHex: '#00ff9d'
   },
+  '/charging': {
+    path: '/charging',
+    name: 'High-Voltage EV Charging Cockpit & Power Flow',
+    subname: 'Tesla HUD Visualization, Battery Skateboard Architecture & Dynamic Telemetry',
+    badge: 'HIGH-VOLTAGE POWER COCKPIT',
+    icon: Zap,
+    svgPath: '/backgrounds/bg-stations.svg',
+    glowColor: 'rgba(32, 214, 194, 0.22)',
+    accentHex: '#20d6c2'
+  },
   '/navigation': {
     path: '/navigation',
-    name: 'Autonomous Highway & Waypoint Ribbon',
-    subname: 'Curving High-Speed Expressway, Topographic Contours & Compass HUD',
-    badge: 'EXPRESSWAY TOPOLOGY RIBBON',
-    icon: Navigation,
-    svgPath: '/backgrounds/bg-navigation.svg',
-    glowColor: 'rgba(0, 240, 255, 0.18)',
-    accentHex: '#00f0ff'
+    name: 'High-Voltage EV Charging Cockpit & Power Flow',
+    subname: 'Tesla HUD Visualization, Battery Skateboard Architecture & Dynamic Telemetry',
+    badge: 'HIGH-VOLTAGE POWER COCKPIT',
+    icon: Zap,
+    svgPath: '/backgrounds/bg-stations.svg',
+    glowColor: 'rgba(32, 214, 194, 0.22)',
+    accentHex: '#20d6c2'
   },
   '/smartvoice': {
     path: '/smartvoice',

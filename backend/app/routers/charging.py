@@ -89,7 +89,7 @@ def estimate_charging_time(
     vehicle_id: int,
     target_soc: float = Query(80.0, ge=10.0, le=100.0),
     charging_power_kw: Optional[float] = Query(None, ge=3.0, le=350.0),
-    tariff: float = Query(0.25, ge=0.01, le=2.0),
+    tariff: float = Query(0.25, ge=0.01, le=100.0),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

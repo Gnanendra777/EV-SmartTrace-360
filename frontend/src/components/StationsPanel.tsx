@@ -398,19 +398,20 @@ export const StationsPanel: React.FC<StationsPanelProps> = ({
                   )}
                 </div>
 
-                {/* Actions row matching Google Maps card UI */}
+                {/* Actions row: Smart Route primary button */}
                 <div className="mt-3 flex items-center gap-2 pt-1">
-                  {station.website_url && (
-                    <a
-                      href={station.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700/80 text-xs font-medium text-slate-200 border border-slate-700 transition-colors"
+                  {onRouteToStation && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRouteToStation(station);
+                      }}
+                      title="Calculate driving road route to this charging station"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 hover:from-emerald-500/35 hover:to-cyan-500/35 text-xs font-semibold text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-95"
                     >
-                      <Globe className="w-3 h-3 text-cyan-400" />
-                      <span>Website</span>
-                    </a>
+                      <Navigation className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>Smart Route</span>
+                    </button>
                   )}
 
                   <a
@@ -418,35 +419,23 @@ export const StationsPanel: React.FC<StationsPanelProps> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-xs font-medium text-cyan-300 border border-cyan-500/40 transition-colors"
+                    className="inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 text-xs font-medium text-slate-300 border border-slate-700 hover:text-white transition-colors"
+                    title="Open directions in external Google Maps"
                   >
-                    <Navigation className="w-3 h-3" />
                     <span>Directions</span>
                   </a>
 
-                  {onRouteToStation && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRouteToStation(station);
-                      }}
-                      className="py-1.5 px-2.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-xs font-medium text-emerald-300 border border-emerald-500/40 transition-colors"
+                  {station.website_url && (
+                    <a
+                      href={station.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 text-xs font-medium text-slate-300 border border-slate-700 hover:text-cyan-300 transition-colors"
+                      title="Visit station operator website"
                     >
-                      Route
-                    </button>
-                  )}
-
-                  {onAddWaypoint && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddWaypoint(station);
-                      }}
-                      title="Add as charging stop"
-                      className="py-1.5 px-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-xs font-medium text-purple-300 border border-purple-500/40 transition-colors"
-                    >
-                      + Stop
-                    </button>
+                      <Globe className="w-3.5 h-3.5" />
+                    </a>
                   )}
                 </div>
               </article>

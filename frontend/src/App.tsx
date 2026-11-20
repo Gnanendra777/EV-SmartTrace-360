@@ -16,7 +16,7 @@ import { BatteryIntelligencePage } from './pages/BatteryIntelligencePage';
 import { EnergyAnalyticsPage } from './pages/EnergyAnalyticsPage';
 import { VehicleDiagnosticsPage } from './pages/VehicleDiagnosticsPage';
 import { ChargingStationsPage } from './pages/ChargingStationsPage';
-import { SmartNavigationPage } from './pages/SmartNavigationPage';
+import { EVChargingPage } from './pages/EVChargingPage';
 import { SmartVoicePage } from './pages/SmartVoicePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { VehicleRegistrationPage } from './pages/VehicleRegistrationPage';
@@ -64,7 +64,8 @@ const AppLayout: React.FC = () => {
           <Route path="/energy" element={<EnergyAnalyticsPage />} />
           <Route path="/diagnostics" element={<VehicleDiagnosticsPage />} />
           <Route path="/stations" element={<ChargingStationsPage />} />
-          <Route path="/navigation" element={<SmartNavigationPage />} />
+          <Route path="/charging" element={<EVChargingPage />} />
+          <Route path="/navigation" element={<Navigate to="/charging" replace />} />
           <Route path="/smartvoice" element={<SmartVoicePage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/vehicles/register" element={<VehicleRegistrationPage />} />
