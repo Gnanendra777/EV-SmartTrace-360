@@ -23,6 +23,13 @@ class ChargingStationOut(BaseModel):
     connections_count: Optional[int] = 1
     data_source: Optional[str] = "Open Charge Map"
     last_updated: Optional[str] = None
+    rating: Optional[float] = 4.5
+    reviews_count: Optional[int] = 18
+    review_snippet: Optional[str] = None
+    phone_number: Optional[str] = None
+    website_url: Optional[str] = None
+    opening_hours: Optional[str] = "Open 24 hours"
+    ports_detail: Optional[List[dict]] = None
 
     class Config:
         from_attributes = True

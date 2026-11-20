@@ -105,6 +105,13 @@ export interface ChargingStation {
   connections_count?: number;
   data_source?: string;
   last_updated?: string;
+  rating?: number;
+  reviews_count?: number;
+  review_snippet?: string;
+  phone_number?: string;
+  website_url?: string;
+  opening_hours?: string;
+  ports_detail?: Array<{ connector: string; power_kw: number; available: number; total: number }>;
 }
 
 export interface GeocodePlace {
