@@ -58,68 +58,9 @@ def seed_initial_data():
         from app.services.simulation_service import seed_sample_ev_datasets
         seed_sample_ev_datasets(db, demo_user.id)
 
-        # Seed Charging Stations if empty
-        if db.query(ChargingStation).count() == 0:
-            stations = [
-                ChargingStation(
-                    station_name="Supercharge Hub - Silicon Metro",
-                    address="101 Tech Blvd, Metro Central",
-                    latitude=37.7749,
-                    longitude=-122.4194,
-                    operator="Tesla Supercharger",
-                    charging_power=250.0,
-                    connector_type="CCS2 / NACS",
-                    availability_status="Available (8/12 Open)",
-                    pricing_per_kwh=0.32
-                ),
-                ChargingStation(
-                    station_name="Electrify Express - Harbor Bay",
-                    address="450 Marina Way, Bayside",
-                    latitude=37.7891,
-                    longitude=-122.4014,
-                    operator="Electrify America",
-                    charging_power=150.0,
-                    connector_type="CCS2 / CHAdeMO",
-                    availability_status="Available (4/6 Open)",
-                    pricing_per_kwh=0.35
-                ),
-                ChargingStation(
-                    station_name="GreenGrid Fast Charge - Sunset Point",
-                    address="820 Ocean Ave, West Coast",
-                    latitude=37.7601,
-                    longitude=-122.4822,
-                    operator="EVgo",
-                    charging_power=100.0,
-                    connector_type="CCS2 / Type 2",
-                    availability_status="Available (2/4 Open)",
-                    pricing_per_kwh=0.28
-                ),
-                ChargingStation(
-                    station_name="VoltPoint Urban Hub - Downtown",
-                    address="12 Civic Center Plaza, Center City",
-                    latitude=37.7793,
-                    longitude=-122.4184,
-                    operator="ChargePoint",
-                    charging_power=50.0,
-                    connector_type="Type 2 / AC Fast",
-                    availability_status="Occupied (All in Use)",
-                    pricing_per_kwh=0.22
-                ),
-                ChargingStation(
-                    station_name="EcoCharge Highway Oasis - Exit 42",
-                    address="Highway 101 Northbound Rest Area",
-                    latitude=37.8205,
-                    longitude=-122.3789,
-                    operator="BP Pulse",
-                    charging_power=180.0,
-                    connector_type="CCS2",
-                    availability_status="Available (5/8 Open)",
-                    pricing_per_kwh=0.30
-                )
-            ]
-            db.add_all(stations)
-            db.commit()
-            logger.info("Charging stations seeded.")
+        # Stations are queried dynamically from live Overpass API / Open Charge Map
+        # rather than seeding hardcoded regional coordinates.
+        logger.info("Database initial seed check complete.")
 
     except Exception as e:
         logger.error(f"Error seeding database: {e}")

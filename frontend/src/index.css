@@ -562,3 +562,29 @@ html.theme-monochrome ::-webkit-scrollbar-thumb:hover {
     animation: none !important;
   }
 }
+
+/* Dark Map Tile Filter (Pure CSS inverted OSM street tiles — no external API key, zero watermark) */
+.dark-tile-filter .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) !important;
+}
+
+/* User Live Location Pulse (Blue Dot) */
+@keyframes userLocationPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 14px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.user-pulse-dot {
+  animation: userLocationPulse 2s infinite;
+}
+

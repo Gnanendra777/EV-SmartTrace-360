@@ -43,292 +43,186 @@ function calculateHaversineKm(lat1: number, lon1: number, lat2: number, lon2: nu
   return Number((R * c).toFixed(2));
 }
 
-export const GOOGLE_MAPS_VERIFIED_STATIONS: ChargingStation[] = [
-  {
-    id: 92001,
-    station_name: "Goec Charging Station",
-    address: "Balanagar Mandal, Near NH 65, Hyderabad, Telangana 500037",
-    latitude: 17.4725,
-    longitude: 78.4352,
-    operator: "GOEC EV Charging",
-    charging_power: 60.0,
-    connector_type: "CCS2, Wall Socket",
-    connector_types: ["CCS2", "Wall Socket"],
-    availability_status: "Operational",
-    pricing_text: "₹18.50 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 4,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 2.9,
-    reviews_count: 19,
-    review_snippet: "Station is easy to locate and access.",
-    phone_number: "1800 120 4632",
-    website_url: "https://goecmobility.com",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 60, available: 2, total: 2 },
-      { connector: "CCS", power_kw: 25, available: 1, total: 1 },
-      { connector: "Wall socket", power_kw: 3, available: 0, total: 1 }
-    ]
-  },
-  {
-    id: 92002,
-    station_name: "BPCL Charging Station",
-    address: "F9WW+HF6, Pune-Hyderabad Highway (NH 65), Balanagar, Hyderabad 500011",
-    latitude: 17.4782,
-    longitude: 78.4415,
-    operator: "Bharat Petroleum (BPCL)",
-    charging_power: 60.0,
-    connector_type: "CCS2",
-    connector_types: ["CCS2"],
-    availability_status: "Operational",
-    pricing_text: "₹19.00 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 1.0,
-    reviews_count: 1,
-    review_snippet: "Quick top-up on National Highway 65.",
-    phone_number: "1800 22 4344",
-    website_url: "https://www.bharatpetroleum.in",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 60, available: 0, total: 2 }
-    ]
-  },
-  {
-    id: 92003,
-    station_name: "Zeon Charging Station",
-    address: "Ashoka One Mall, 5-7/22, Road Number 3, Kukatpally, Hyderabad 500072",
-    latitude: 17.4841,
-    longitude: 78.4215,
-    operator: "Zeon Charging",
-    charging_power: 120.0,
-    connector_type: "CCS2, Type 2",
-    connector_types: ["CCS2", "Type 2"],
-    availability_status: "Operational",
-    pricing_text: "₹21.00 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Ultra-Fast",
-    connections_count: 3,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 4.9,
-    reviews_count: 29,
-    review_snippet: "Fast charging with good maintenance and easy basement parking.",
-    phone_number: "097896 16161",
-    website_url: "https://zeoncharging.com",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 120, available: 2, total: 2 },
-      { connector: "Type 2", power_kw: 22, available: 1, total: 1 }
-    ]
-  },
-  {
-    id: 92004,
-    station_name: "ThunderPlus Charging Station",
-    address: "Vasanth Nagar, KPHB Colony, Hyderabad, Telangana 500085",
-    latitude: 17.4895,
-    longitude: 78.4128,
-    operator: "ThunderPlus",
-    charging_power: 60.0,
-    connector_type: "CCS2",
-    connector_types: ["CCS2"],
-    availability_status: "Operational",
-    pricing_text: "₹18.00 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 4.1,
-    reviews_count: 14,
-    review_snippet: "Convenient roadside fast charging at Vasanth Nagar.",
-    phone_number: "1800 572 4580",
-    website_url: "https://thunderplus.io",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 60, available: 1, total: 2 }
-    ]
-  },
-  {
-    id: 92005,
-    station_name: "Ather Grid Charging Station",
-    address: "Balaji Nagar, Kukatpally, Hyderabad, Telangana 500072",
-    latitude: 17.4812,
-    longitude: 78.4285,
-    operator: "Ather Energy",
-    charging_power: 22.0,
-    connector_type: "Ather Grid, Type 2",
-    connector_types: ["Ather Grid", "Type 2"],
-    availability_status: "Operational",
-    pricing_text: "Complimentary / ₹15.00/kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "AC Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 4.4,
-    reviews_count: 36,
-    review_snippet: "Clean setup and reliable charging speed in Kukatpally.",
-    phone_number: "080 6646 3333",
-    website_url: "https://www.atherenergy.com",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "Type 2", power_kw: 22, available: 2, total: 2 }
-    ]
-  },
-  {
-    id: 92006,
-    station_name: "Bolt.Earth Charging Station",
-    address: "Opp. JNTU Metro Station, Kukatpally Housing Board, Hyderabad 500085",
-    latitude: 17.4764,
-    longitude: 78.4312,
-    operator: "Bolt.Earth",
-    charging_power: 30.0,
-    connector_type: "CCS2, Industrial Socket",
-    connector_types: ["CCS2", "Industrial Socket"],
-    availability_status: "Operational",
-    pricing_text: "₹16.50 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 3,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 3.9,
-    reviews_count: 22,
-    review_snippet: "Good connectivity right next to metro hub.",
-    phone_number: "080 4718 8488",
-    website_url: "https://bolt.earth",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 30, available: 2, total: 2 },
-      { connector: "Wall socket", power_kw: 3.3, available: 1, total: 1 }
-    ]
-  },
-  {
-    id: 92007,
-    station_name: "GLIDA Charging Station",
-    address: "Moosapet Cross Roads, NH 65, Hyderabad 500018",
-    latitude: 17.4691,
-    longitude: 78.4438,
-    operator: "GLIDA (Fortum Charge & Drive)",
-    charging_power: 60.0,
-    connector_type: "CCS2, CHAdeMO",
-    connector_types: ["CCS2", "CHAdeMO"],
-    availability_status: "Operational",
-    pricing_text: "₹19.50 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 4.3,
-    reviews_count: 18,
-    review_snippet: "High-speed 60kW dual-gun charger at Moosapet junction.",
-    phone_number: "1800 120 3404",
-    website_url: "https://glida.in",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 60, available: 2, total: 2 }
-    ]
-  },
-  {
-    id: 92008,
-    station_name: "ElectricPe Charging Station",
-    address: "Anjaneya Nagar, Moosapet, Hyderabad, Telangana 500018",
-    latitude: 17.4718,
-    longitude: 78.4289,
-    operator: "ElectricPe",
-    charging_power: 50.0,
-    connector_type: "CCS2, Type 2",
-    connector_types: ["CCS2", "Type 2"],
-    availability_status: "Operational",
-    pricing_text: "₹17.50 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 4.0,
-    reviews_count: 15,
-    review_snippet: "Seamless digital payment through app and fast start.",
-    phone_number: "080 4748 4545",
-    website_url: "https://electricpe.com",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 50, available: 1, total: 2 }
-    ]
-  },
-  {
-    id: 92009,
-    station_name: "Electricfuel Charging Station",
-    address: "Prashanthi Nagar, Kukatpally Industrial Area, Hyderabad 500072",
-    latitude: 17.4751,
-    longitude: 78.4201,
-    operator: "ElectricFuel",
-    charging_power: 60.0,
-    connector_type: "CCS2",
-    connector_types: ["CCS2"],
-    availability_status: "Operational",
-    pricing_text: "₹18.00 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 3.8,
-    reviews_count: 8,
-    review_snippet: "Industrial zone charging point with high uptime.",
-    phone_number: "040 2307 8899",
-    website_url: "https://electricfuel.in",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 60, available: 2, total: 2 }
-    ]
-  },
-  {
-    id: 92010,
-    station_name: "Kia Charging Station",
-    address: "Kia Automotive Hub, NH 65, Balanagar, Hyderabad 500037",
-    latitude: 17.4739,
-    longitude: 78.4485,
-    operator: "Kia EV Network",
-    charging_power: 100.0,
-    connector_type: "CCS2",
-    connector_types: ["CCS2"],
-    availability_status: "Operational",
-    pricing_text: "₹20.00 / kWh",
-    is_operational: true,
-    status_title: "Operational",
-    ac_dc_type: "DC Ultra-Fast",
-    connections_count: 2,
-    data_source: "Google Maps & Open Charge Map",
-    last_updated: "Live",
-    rating: 4.6,
-    reviews_count: 42,
-    review_snippet: "Clean showroom facility with high-speed DC charging.",
-    phone_number: "1800 108 5000",
-    website_url: "https://www.kia.com/in",
-    opening_hours: "Open 24 hours",
-    ports_detail: [
-      { connector: "CCS", power_kw: 100, available: 1, total: 2 }
-    ]
-  }
+// Parser for OpenStreetMap Overpass elements into ChargingStation objects
+function parseOverpassElements(elements: any[], centerLat: number, centerLng: number): ChargingStation[] {
+  return elements
+    .filter((el) => (el.lat !== undefined && el.lon !== undefined) || (el.center && el.center.lat !== undefined))
+    .map((el) => {
+      const lat = el.lat ?? el.center.lat;
+      const lon = el.lon ?? el.center.lon;
+      const tags = el.tags || {};
+      const name = tags.name || tags.operator || tags.brand || 'EV Charging Station';
+      const operator = tags.operator || tags.brand || tags.network || 'Not provided';
+      const addressParts = [
+        tags['addr:street'] ? `${tags['addr:housenumber'] || ''} ${tags['addr:street']}`.trim() : null,
+        tags['addr:suburb'] || tags['addr:district'],
+        tags['addr:city'] || tags['addr:town'],
+        tags['addr:postcode'],
+      ].filter(Boolean);
+      const address = addressParts.length > 0 ? addressParts.join(', ') : `Near ${centerLat.toFixed(3)}, ${centerLng.toFixed(3)}`;
+
+      // Parse power
+      let power = 22.0;
+      if (tags.capacity) {
+        const cap = parseFloat(tags.capacity);
+        if (!isNaN(cap) && cap > 0) power = Math.min(350, cap * 22);
+      }
+      for (const k of Object.keys(tags)) {
+        if (k.startsWith('socket:') && k.endsWith(':output')) {
+          const val = parseFloat(tags[k].replace(/[^\d.]/g, ''));
+          if (!isNaN(val) && val > 0) {
+            power = Math.max(power, val);
+          }
+        }
+      }
+
+      // Parse connectors
+      const connectors: string[] = [];
+      if (tags['socket:type2_combo'] || tags['socket:type2_combo:output'] || tags['socket:ccs']) connectors.push('CCS2');
+      if (tags['socket:chademo']) connectors.push('CHAdeMO');
+      if (tags['socket:type2'] || tags['socket:type2:cable']) connectors.push('Type 2');
+      if (tags['socket:type1']) connectors.push('Type 1');
+      if (tags['socket:tesla_supercharger'] || tags['socket:tesla']) connectors.push('Tesla Supercharger');
+      if (tags['socket:schuko'] || tags['socket:domestic']) connectors.push('Wall socket');
+      if (connectors.length === 0) connectors.push('Type 2');
+
+      const isFast = power >= 50;
+      const dist = calculateHaversineKm(centerLat, centerLng, lat, lon);
+
+      return {
+        id: el.id,
+        station_name: name,
+        address,
+        latitude: lat,
+        longitude: lon,
+        operator,
+        charging_power: power,
+        connector_type: connectors.join(', '),
+        connector_types: connectors,
+        availability_status: 'Operational',
+        pricing_text: tags.fee === 'no' ? 'Free' : tags.fee === 'yes' ? 'Fee applies' : 'Not provided',
+        is_operational: true,
+        status_title: 'Operational',
+        ac_dc_type: isFast ? 'DC Fast' : 'AC Standard',
+        connections_count: connectors.length,
+        data_source: 'OpenStreetMap (Overpass)',
+        last_updated: 'Live OSM',
+        distance_km: dist,
+        rating: null,
+        reviews_count: null,
+        review_snippet: null,
+        phone_number: tags.phone || tags['contact:phone'] || null,
+        website_url: tags.website || tags['contact:website'] || null,
+        opening_hours: tags.opening_hours || null,
+        ports_detail: connectors.map((c) => ({
+          connector: c,
+          power_kw: power,
+          total: 2,
+          available: null,
+        })),
+        is_offline_sample: false,
+      };
+    })
+    .sort((a, b) => (a.distance_km || 0) - (b.distance_km || 0));
+}
+
+// Generate clearly flagged offline sample stations around user's actual position when network is down
+export function generateOfflineSampleStations(lat: number, lng: number): ChargingStation[] {
+  const templates = [
+    { name: 'EV FastCharge Hub', offsetLat: 0.008, offsetLng: 0.006, power: 60, op: 'Local Fast Network', conn: ['CCS2', 'Type 2'] },
+    { name: 'Transit Supercharger', offsetLat: -0.006, offsetLng: 0.011, power: 120, op: 'Transit EV Power', conn: ['CCS2'] },
+    { name: 'City Green Charger', offsetLat: 0.012, offsetLng: -0.007, power: 25, op: 'City Charge', conn: ['CCS2', 'Wall socket'] },
+    { name: 'Metro Plaza EV Point', offsetLat: -0.010, offsetLng: -0.008, power: 50, op: 'Metro Power', conn: ['CCS2', 'CHAdeMO'] },
+    { name: 'Highway Express Charging', offsetLat: 0.018, offsetLng: 0.014, power: 150, op: 'Express EV', conn: ['CCS2'] },
+  ];
+
+  return templates.map((t, idx) => {
+    const sLat = lat + t.offsetLat;
+    const sLng = lng + t.offsetLng;
+    const dist = calculateHaversineKm(lat, lng, sLat, sLng);
+    return {
+      id: 99000 + idx,
+      station_name: t.name,
+      address: `Near location (${dist} km)`,
+      latitude: sLat,
+      longitude: sLng,
+      operator: t.op,
+      charging_power: t.power,
+      connector_type: t.conn.join(', '),
+      connector_types: t.conn,
+      availability_status: 'Operational',
+      pricing_text: 'Not provided',
+      is_operational: true,
+      status_title: 'Operational',
+      ac_dc_type: t.power >= 50 ? 'DC Fast' : 'AC Standard',
+      connections_count: t.conn.length,
+      data_source: 'Offline sample',
+      is_offline_sample: true,
+      last_updated: 'Offline preview',
+      distance_km: dist,
+      rating: null,
+      reviews_count: null,
+      review_snippet: null,
+      phone_number: null,
+      website_url: null,
+      opening_hours: null,
+      ports_detail: t.conn.map((c) => ({
+        connector: c,
+        power_kw: t.power,
+        total: 2,
+        available: null,
+      })),
+    };
+  });
+}
+
+const OVERPASS_MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
 ];
+
+async function queryOverpassInBrowser(lat: number, lng: number, radiusKm: number): Promise<ChargingStation[]> {
+  const radiusMeters = Math.min(50000, Math.max(1000, Math.round(radiusKm * 1000)));
+  const query = `[out:json][timeout:9];(node["amenity"="charging_station"](around:${radiusMeters},${lat},${lng});way["amenity"="charging_station"](around:${radiusMeters},${lat},${lng}););out center body;`;
+
+  for (const mirror of OVERPASS_MIRRORS) {
+    try {
+      const res = await axios.post(mirror, `data=${encodeURIComponent(query)}`, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 9000,
+      });
+      const elements = res.data?.elements;
+      if (Array.isArray(elements) && elements.length > 0) {
+        return parseOverpassElements(elements, lat, lng);
+      }
+    } catch {
+      // try next mirror
+    }
+  }
+  return [];
+}
+
+async function queryOverpassBoundsInBrowser(south: number, west: number, north: number, east: number): Promise<ChargingStation[]> {
+  const query = `[out:json][timeout:9];(node["amenity"="charging_station"](${south},${west},${north},${east});way["amenity"="charging_station"](${south},${west},${north},${east}););out center body;`;
+
+  for (const mirror of OVERPASS_MIRRORS) {
+    try {
+      const res = await axios.post(mirror, `data=${encodeURIComponent(query)}`, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 9000,
+      });
+      const elements = res.data?.elements;
+      if (Array.isArray(elements) && elements.length > 0) {
+        return parseOverpassElements(elements, (south + north) / 2, (west + east) / 2);
+      }
+    } catch {
+      // try next mirror
+    }
+  }
+  return [];
+}
+
 
 // Resilient API services with full mock fallbacks for standalone/offline demoability
 export const api = {
@@ -745,6 +639,7 @@ export const api = {
     minPower?: number,
     maxResults: number = 50
   ): Promise<ChargingStation[]> => {
+    // 1. Attempt backend proxy
     try {
       const res = await apiClient.get('/stations/nearby', {
         params: {
@@ -755,34 +650,86 @@ export const api = {
           distance_km: distanceKm,
           connector_type: connectorType !== 'All' ? connectorType : undefined,
           min_power: minPower,
-          max_results: maxResults
-        }
+          max_results: maxResults,
+        },
       });
       if (Array.isArray(res.data) && res.data.length > 0) {
         return res.data;
       }
     } catch (e) {
-      console.warn('Backend stations endpoint notice, loading Google Maps verified stations:', e);
+      console.warn('Backend stations endpoint unavailable, attempting direct browser Overpass query:', e);
     }
 
-    // High-fidelity fallback with calculated distance from user coordinates
-    return GOOGLE_MAPS_VERIFIED_STATIONS.map((station) => {
-      const dist = calculateHaversineKm(lat, lng, station.latitude, station.longitude);
-      return {
-        ...station,
-        distance_km: dist
-      };
-    }).filter((station) => {
-      if (station.distance_km > distanceKm) return false;
-      if (connectorType && connectorType !== 'All') {
-        const matches = (station.connector_types || [station.connector_type]).some(c => 
-          c.toLowerCase().includes(connectorType.toLowerCase())
-        );
-        if (!matches) return false;
+    // 2. Direct browser Overpass API query across live mirrors
+    try {
+      const liveOverpass = await queryOverpassInBrowser(lat, lng, distanceKm);
+      if (liveOverpass.length > 0) {
+        return liveOverpass
+          .filter((s) => {
+            if (s.distance_km && s.distance_km > distanceKm) return false;
+            if (connectorType && connectorType !== 'All') {
+              const matches = (s.connector_types || [s.connector_type]).some((c) =>
+                c.toLowerCase().includes(connectorType.toLowerCase())
+              );
+              if (!matches) return false;
+            }
+            if (minPower && s.charging_power < minPower) return false;
+            return true;
+          })
+          .slice(0, maxResults);
       }
-      if (minPower && station.charging_power < minPower) return false;
-      return true;
-    }).sort((a, b) => (a.distance_km || 0) - (b.distance_km || 0));
+    } catch (overpassErr) {
+      console.warn('Browser Overpass query failed:', overpassErr);
+    }
+
+    // 3. Resilient fallback: dynamic sample stations around user's actual position (clearly flagged)
+    return generateOfflineSampleStations(lat, lng);
+  },
+
+  getStationsInBounds: async (
+    south: number,
+    west: number,
+    north: number,
+    east: number,
+    connectorType?: string,
+    minPower?: number
+  ): Promise<ChargingStation[]> => {
+    try {
+      const res = await apiClient.get('/stations/in-bounds', {
+        params: {
+          south,
+          west,
+          north,
+          east,
+          connector_type: connectorType !== 'All' ? connectorType : undefined,
+          min_power: minPower,
+        },
+      });
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend in-bounds error, attempting direct Overpass bounds query:', e);
+    }
+
+    try {
+      const direct = await queryOverpassBoundsInBrowser(south, west, north, east);
+      if (direct.length > 0) {
+        return direct.filter((s) => {
+          if (connectorType && connectorType !== 'All') {
+            const matches = (s.connector_types || [s.connector_type]).some((c) =>
+              c.toLowerCase().includes(connectorType.toLowerCase())
+            );
+            if (!matches) return false;
+          }
+          if (minPower && s.charging_power < minPower) return false;
+          return true;
+        });
+      }
+    } catch (err) {
+      console.warn('Direct bounds query failed:', err);
+    }
+    return [];
   },
 
   getDirectionsRoute: async (
@@ -960,7 +907,19 @@ export const api = {
       const batteryPctUsed = Number(((estimatedEnergy / batteryCapacity) * 100).toFixed(1));
       const arrivalSoc = Number(Math.max(0, startSoc - batteryPctUsed).toFixed(1));
       const isSufficient = arrivalSoc >= desiredArrival;
-      const waypointStation = (params.waypoints && params.waypoints.length > 0) ? GOOGLE_MAPS_VERIFIED_STATIONS[0] : null;
+      // Fetch real nearby stations around route midpoint for stops
+      let recommendedStops: ChargingStation[] = [];
+      try {
+        const midLat = (params.origin_lat + params.destination_lat) / 2;
+        const midLng = (params.origin_lng + params.destination_lng) / 2;
+        recommendedStops = await api.getNearbyStations(midLat, midLng, 30);
+      } catch {
+        recommendedStops = generateOfflineSampleStations(params.origin_lat, params.origin_lng);
+      }
+
+      const waypointStation = (params.waypoints && params.waypoints.length > 0 && recommendedStops.length > 0)
+        ? recommendedStops[0]
+        : null;
 
       return {
         origin_lat: params.origin_lat,
@@ -977,12 +936,12 @@ export const api = {
         estimated_arrival_soc: arrivalSoc,
         battery_sufficient: isSufficient,
         charging_needed: !isSufficient,
-        recommended_charging_stops: GOOGLE_MAPS_VERIFIED_STATIONS.slice(0, 4),
+        recommended_charging_stops: recommendedStops.slice(0, 4),
         charging_stop_included: waypointStation,
         reserve_status: isSufficient
           ? `Battery level sufficient for direct transit. Arrival SOC estimated at ${arrivalSoc}%.`
           : `Battery reserve below threshold (${arrivalSoc}% vs ${desiredArrival}% buffer). Charging waypoint advised.`,
-        assumptions_disclaimer: 'Calculated using real road geometry from OSRM, verified fast chargers from Open Charge Map / Google Maps, and dynamic EV powertrain simulation.',
+        assumptions_disclaimer: 'Calculated using real road geometry from OSRM, verified fast chargers from Open Charge Map / Overpass, and dynamic EV powertrain simulation.',
         geometry: routeCoords
       };
     }
@@ -995,7 +954,7 @@ export const api = {
       });
       return res.data;
     } catch {
-      return GOOGLE_MAPS_VERIFIED_STATIONS;
+      return [];
     }
   },
 
@@ -1038,13 +997,7 @@ export const api = {
             charging_stops: [],
             co2_saved_kg: 8.98,
             summary: 'Smooth traffic flow on highway corridor with guaranteed charger density and minimal battery degradation.',
-            waypoints: [
-              [17.4725, 78.4352],
-              [17.4782, 78.4415],
-              [17.4812, 78.4285],
-              [17.4841, 78.4215],
-              [17.4895, 78.4128]
-            ]
+            waypoints: []
           },
           {
             route_id: 'route_fastest',
@@ -1060,12 +1013,7 @@ export const api = {
             charging_stops: [],
             co2_saved_kg: 8.21,
             summary: 'High-speed interstate route. Energy consumption is ~14% higher due to aerodynamic resistance.',
-            waypoints: [
-              [17.4725, 78.4352],
-              [17.4751, 78.4201],
-              [17.4841, 78.4215],
-              [17.4895, 78.4128]
-            ]
+            waypoints: []
           },
           {
             route_id: 'route_eco',
@@ -1081,12 +1029,7 @@ export const api = {
             charging_stops: [],
             co2_saved_kg: 9.91,
             summary: 'Optimized for regenerative braking and scenic parkway speeds. Preserves maximum battery safety margin.',
-            waypoints: [
-              [17.4725, 78.4352],
-              [17.4691, 78.4438],
-              [17.4764, 78.4312],
-              [17.4841, 78.4215]
-            ]
+            waypoints: []
           }
         ],
         recommended_route_id: 'route_balanced'

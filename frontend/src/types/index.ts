@@ -105,13 +105,14 @@ export interface ChargingStation {
   connections_count?: number;
   data_source?: string;
   last_updated?: string;
-  rating?: number;
-  reviews_count?: number;
-  review_snippet?: string;
-  phone_number?: string;
-  website_url?: string;
-  opening_hours?: string;
-  ports_detail?: Array<{ connector: string; power_kw: number; available: number; total: number }>;
+  rating?: number | null;
+  reviews_count?: number | null;
+  review_snippet?: string | null;
+  phone_number?: string | null;
+  website_url?: string | null;
+  opening_hours?: string | null;
+  ports_detail?: Array<{ connector: string; power_kw: number; available?: number | null; total: number; availability_last_updated?: string | null }>;
+  is_offline_sample?: boolean;
 }
 
 export interface GeocodePlace {

@@ -1,101 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Globe, Layers, Navigation, Maximize2, LocateFixed, Zap, ExternalLink, Route } from 'lucide-react';
+import { Layers, Navigation, Maximize2, LocateFixed, Zap, ExternalLink, RefreshCw } from 'lucide-react';
 import { ChargingStation } from '../types';
+import { MAP_LAYERS, MapLayerType, getStoredMapLayer, setStoredMapLayer } from './map/mapProviders';
 
-// Custom Map Markers matching Google Maps EV experience
+// 1. User Live Location Marker (Blue Dot with Pulse Ring)
+export const createUserLocationIcon = () =>
+  L.divIcon({
+    className: 'custom-user-location-marker',
+    html: `
+      <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+        <div class="user-pulse-dot" style="position: absolute; width: 24px; height: 24px; border-radius: 50%; background: rgba(59, 130, 246, 0.35);"></div>
+        <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background: #2563eb; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(37, 99, 235, 0.9);"></div>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
 
-// 1. Google Maps Authentic Blue GPS Position Dot with Radiating Radar Ring
-export const createUserLocationIcon = () => L.divIcon({
-  className: 'custom-google-user-gps',
-  html: `
-    <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
-      <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(26, 115, 232, 0.3); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-      <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: rgba(26, 115, 232, 0.45);"></div>
-      <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background: #1A73E8; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(26, 115, 232, 0.8);"></div>
-    </div>
-  `,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17]
-});
-
-// 2. Google Maps Red Circular EV Station Pin (#EA4335) with White ⚡ and Station Name Pill
+// 2. EV Station Red Circular Pin with ⚡ bolt and Name Tag
 export const createStationIcon = (station: ChargingStation, isSelected: boolean = false) => {
-  const pinBg = isSelected ? '#1A73E8' : '#EA4335';
-  const shadow = isSelected 
-    ? 'box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.45), 0 4px 14px rgba(0,0,0,0.6);' 
-    : 'box-shadow: 0 2px 8px rgba(0,0,0,0.45);';
-  const scale = isSelected ? 'transform: scale(1.15);' : '';
-
-  // Shorten name for floating pill
+  const pinBg = isSelected ? '#06b6d4' : '#ef4444';
   const shortName = station.station_name
     .replace(/Charging Station/gi, '')
     .replace(/EV Station/gi, '')
     .trim();
 
   return L.divIcon({
-    className: 'custom-google-station-pin',
+    className: 'custom-station-pin',
     html: `
       <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
         <div style="
-          position: relative;
-          background: ${pinBg};
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 2px solid #FFFFFF;
-          ${shadow}
+          background: ${pinBg};
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
+          color: #ffffff;
           font-size: 13px;
-          color: #FFFFFF;
-          transition: transform 0.15s ease, background-color 0.15s ease;
-          ${scale}
-        ">
-          ⚡
-        </div>
+          font-weight: bold;
+          transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
+          transition: transform 0.15s ease;
+        ">⚡</div>
         <div style="
-          margin-top: 3px;
+          margin-top: 2px;
           white-space: nowrap;
-          background: rgba(15, 23, 42, 0.94);
+          background: rgba(15, 23, 42, 0.92);
           backdrop-filter: blur(4px);
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          color: #F8FAFC;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #f8fafc;
           font-size: 10px;
           font-weight: 600;
-          padding: 1.5px 6px;
-          border-radius: 6px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+          padding: 1px 6px;
+          border-radius: 5px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
           pointer-events: none;
         ">
-          ${shortName} <span style="color: #4ADE80; font-size: 9px; font-weight: 700;">${Math.round(station.charging_power)}kW</span>
+          ${shortName} <span style="color: #34d399; font-weight: 700;">${Math.round(station.charging_power)}kW</span>
         </div>
       </div>
     `,
-    iconSize: [140, 52],
-    iconAnchor: [70, 14]
+    iconSize: [120, 50],
+    iconAnchor: [60, 14],
   });
 };
 
-// 3. Modern Destination Marker
+// 3. Destination Terminal Marker
 export const destinationPinIcon = L.divIcon({
   className: 'custom-destination-pin',
   html: `
-    <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
-      <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(244, 63, 94, 0.35); animation: ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-      <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #F43F5E; border: 2.5px solid #ffffff; box-shadow: 0 0 16px rgba(244, 63, 94, 0.95); display: flex; align-items: center; justify-content: center;">
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: #ffffff;"></div>
-      </div>
-      <div style="position: absolute; bottom: -15px; white-space: nowrap; background: rgba(6, 21, 27, 0.95); border: 1px solid #F43F5E; color: #FFF; font-family: monospace; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 4px;">
-        DESTINATION
+    <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+      <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: rgba(244, 63, 94, 0.3); animation: ping 2.5s infinite;"></div>
+      <div style="position: relative; width: 18px; height: 18px; border-radius: 50%; background: #f43f5e; border: 2.5px solid #ffffff; box-shadow: 0 0 14px rgba(244, 63, 94, 0.9); display: flex; align-items: center; justify-content: center;">
+        <div style="width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></div>
       </div>
     </div>
   `,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17]
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
 // 4. Waypoint / Charging Stop Marker
@@ -103,30 +90,28 @@ export const waypointPinIcon = L.divIcon({
   className: 'custom-waypoint-pin',
   html: `
     <div style="
-      background: #F5B942;
-      width: 30px;
-      height: 30px;
+      background: #f59e0b;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      border: 2px solid #06151B;
-      box-shadow: 0 0 16px rgba(245, 185, 66, 0.9);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.9);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
-      font-weight: bold;
-      color: #06151B;
+      font-size: 12px;
+      color: #ffffff;
     ">🔌</div>
   `,
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
 });
 
-export type MapLayerType = 'google-traffic' | 'google-roadmap' | 'google-satellite' | 'cyber' | 'streets';
-
-interface InteractiveMapProps {
+export interface InteractiveMapProps {
   stations?: ChargingStation[];
   routeWaypoints?: number[][]; // [[lat, lng], ...]
   userLocation?: [number, number] | null;
+  userAccuracy?: number | null;
   destinationLocation?: [number, number] | null;
   waypointLocation?: [number, number] | null;
   selectedStationId?: number | null;
@@ -134,53 +119,96 @@ interface InteractiveMapProps {
   zoom?: number;
   onSelectStation?: (station: ChargingStation) => void;
   onLocateMe?: () => void;
-  defaultLayer?: MapLayerType;
+  onSearchThisArea?: (bounds: { south: number; west: number; north: number; east: number }) => void;
   className?: string;
 }
 
-// Controller component to smoothly pan/zoom and fit bounds
-const MapController: React.FC<{ 
-  center?: [number, number]; 
-  waypoints?: number[][]; 
-  stations?: ChargingStation[];
+// Controller to handle smooth flyTo and fitBounds without infinite render loops
+const MapController: React.FC<{
+  center: [number, number];
+  zoom: number;
   userLocation?: [number, number] | null;
   destinationLocation?: [number, number] | null;
   waypointLocation?: [number, number] | null;
+  routeWaypoints?: number[][];
   selectedStationId?: number | null;
-  triggerFit?: number 
-}> = ({ center, waypoints, stations, userLocation, destinationLocation, waypointLocation, selectedStationId, triggerFit }) => {
+  stations?: ChargingStation[];
+  fitTrigger: number;
+  onMapMoved?: () => void;
+}> = ({
+  center,
+  userLocation,
+  destinationLocation,
+  waypointLocation,
+  routeWaypoints,
+  selectedStationId,
+  stations,
+  fitTrigger,
+  onMapMoved,
+}) => {
   const map = useMap();
+  const hasInitializedRef = useRef<boolean>(false);
 
+  // Map move event for "Search this area"
+  useMapEvents({
+    moveend: () => {
+      onMapMoved?.();
+    },
+  });
+
+  // Selected station change -> smoothly fly to it
   useEffect(() => {
-    // If a specific station was selected by the user, smoothly focus on it
     if (selectedStationId && stations && stations.length > 0) {
-      const selected = stations.find(s => s.id === selectedStationId);
-      if (selected) {
-        map.flyTo([selected.latitude, selected.longitude], Math.max(map.getZoom(), 15), { duration: 0.8 });
-        return;
+      const target = stations.find((s) => s.id === selectedStationId);
+      if (target) {
+        map.flyTo([target.latitude, target.longitude], Math.max(map.getZoom(), 15), {
+          duration: 0.8,
+        });
       }
     }
+  }, [selectedStationId, stations, map]);
 
-    // If route waypoints exist, fit route bounds
-    if (waypoints && waypoints.length > 1) {
-      const bounds = L.latLngBounds(waypoints as [number, number][]);
-      map.fitBounds(bounds, { padding: [40, 40] });
-    } else if (stations && stations.length > 0 && userLocation) {
-      const points: [number, number][] = [userLocation];
-      stations.forEach(s => points.push([s.latitude, s.longitude]));
+  // Initial fit or user-triggered Fit View click
+  useEffect(() => {
+    // Only fit on explicit trigger or initial setup
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      if (routeWaypoints && routeWaypoints.length > 1) {
+        const bounds = L.latLngBounds(routeWaypoints as [number, number][]);
+        map.fitBounds(bounds, { padding: [40, 40] });
+        return;
+      }
+      if (userLocation && destinationLocation) {
+        const bounds = L.latLngBounds([userLocation, destinationLocation]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+        return;
+      }
+      map.setView(center, 13);
+      return;
+    }
+
+    if (fitTrigger > 0) {
+      if (routeWaypoints && routeWaypoints.length > 1) {
+        const bounds = L.latLngBounds(routeWaypoints as [number, number][]);
+        map.fitBounds(bounds, { padding: [40, 40] });
+        return;
+      }
+      const points: [number, number][] = [];
+      if (userLocation) points.push(userLocation);
       if (destinationLocation) points.push(destinationLocation);
       if (waypointLocation) points.push(waypointLocation);
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-    } else if (destinationLocation && userLocation) {
-      const points: [number, number][] = [userLocation, destinationLocation];
-      if (waypointLocation) points.push(waypointLocation);
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [60, 60] });
-    } else if (center) {
-      map.panTo(center);
+      if (stations) {
+        stations.slice(0, 20).forEach((s) => points.push([s.latitude, s.longitude]));
+      }
+
+      if (points.length > 1) {
+        const bounds = L.latLngBounds(points);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      } else if (userLocation) {
+        map.flyTo(userLocation, 14);
+      }
     }
-  }, [center, waypoints, stations, userLocation, destinationLocation, waypointLocation, selectedStationId, triggerFit, map]);
+  }, [fitTrigger, map]);
 
   return null;
 };
@@ -189,211 +217,194 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   stations = [],
   routeWaypoints = [],
   userLocation = null,
+  userAccuracy = null,
   destinationLocation = null,
   waypointLocation = null,
   selectedStationId = null,
-  center = [17.4725, 78.4352], // Default to active Hyderabad corridor if no GPS yet
+  center,
   zoom = 13,
   onSelectStation,
   onLocateMe,
-  defaultLayer = 'google-traffic',
-  className = ''
+  onSearchThisArea,
+  className = '',
 }) => {
-  const [mapLayer, setMapLayer] = useState<MapLayerType>(defaultLayer);
-  const [triggerFit, setTriggerFit] = useState(0);
+  const [activeLayer, setActiveLayer] = useState<MapLayerType>(getStoredMapLayer);
+  const [showLayerMenu, setShowLayerMenu] = useState<boolean>(false);
+  const [fitTrigger, setFitTrigger] = useState<number>(0);
+  const [showSearchAreaButton, setShowSearchAreaButton] = useState<boolean>(false);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const activeCenter = userLocation || (routeWaypoints.length > 0 ? (routeWaypoints[0] as [number, number]) : center);
+  const layerConfig = MAP_LAYERS[activeLayer] || MAP_LAYERS.dark;
+
+  const handleSelectLayer = (type: MapLayerType) => {
+    setActiveLayer(type);
+    setStoredMapLayer(type);
+    setShowLayerMenu(false);
+  };
+
+  const mapCenter: [number, number] = useMemo(() => {
+    if (userLocation) return userLocation;
+    if (center) return center;
+    if (stations.length > 0) return [stations[0].latitude, stations[0].longitude];
+    return [20.5937, 78.9629]; // Safe global default
+  }, [userLocation, center, stations]);
+
+  const handleSearchAreaClick = () => {
+    setShowSearchAreaButton(false);
+    if (mapContainerRef.current) {
+      const leafletMap = (mapContainerRef.current as any)._leaflet_map;
+      if (leafletMap && onSearchThisArea) {
+        const b = leafletMap.getBounds();
+        onSearchThisArea({
+          north: b.getNorth(),
+          east: b.getEast(),
+          south: b.getSouth(),
+          west: b.getWest(),
+        });
+      }
+    }
+  };
 
   return (
-    <div className={`w-full h-full min-h-[460px] rounded-2xl overflow-hidden border border-cyan-500/25 relative shadow-2xl ${className}`}>
-      
-      {/* Floating Map Layer & Controls Bar */}
-      <div className="absolute top-4 right-4 z-[400] flex items-center flex-wrap gap-1.5 bg-[#06151B]/90 backdrop-blur-md p-1.5 rounded-xl border border-cyan-500/30 shadow-2xl">
-        
-        {/* 1. Google Live Traffic (Default) */}
-        <button
-          onClick={() => setMapLayer('google-traffic')}
-          className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-            mapLayer === 'google-traffic'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-bold'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-          }`}
-          title="Google Maps with Live Traffic Flow"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Google Traffic</span>
-        </button>
+    <div
+      ref={mapContainerRef}
+      className={`relative w-full h-full min-h-[460px] overflow-hidden rounded-2xl border border-slate-800 shadow-2xl bg-slate-950 ${className}`}
+    >
+      {/* Top Left: Layers Selector */}
+      <div className="absolute top-4 left-4 z-[400]">
+        <div className="relative">
+          <button
+            onClick={() => setShowLayerMenu(!showLayerMenu)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-100 text-xs font-semibold backdrop-blur-md border border-slate-700 shadow-xl transition-all"
+            title="Switch map layer"
+          >
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <span>{layerConfig.label}</span>
+          </button>
 
-        {/* 2. Google Roadmap */}
-        <button
-          onClick={() => setMapLayer('google-roadmap')}
-          className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-            mapLayer === 'google-roadmap'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-bold'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-          }`}
-          title="Google Maps Standard Roadmap"
-        >
-          <Navigation className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Google Map</span>
-        </button>
+          {showLayerMenu && (
+            <div className="absolute top-full left-0 mt-2 w-44 rounded-xl bg-slate-900/95 border border-slate-700 shadow-2xl backdrop-blur-md overflow-hidden text-xs py-1">
+              {(Object.keys(MAP_LAYERS) as MapLayerType[]).map((key) => {
+                const cfg = MAP_LAYERS[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleSelectLayer(key)}
+                    className={`w-full text-left px-3 py-2 transition-colors ${
+                      activeLayer === key
+                        ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className="font-medium">{cfg.label}</div>
+                    <div className="text-[10px] text-slate-400">{cfg.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* 3. Google Satellite / Hybrid */}
-        <button
-          onClick={() => setMapLayer('google-satellite')}
-          className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-            mapLayer === 'google-satellite'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-bold'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-          }`}
-          title="Google Maps Satellite Hybrid"
-        >
-          <Globe className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Satellite</span>
-        </button>
+      {/* Top Center: "Search this area" Button when user pans map */}
+      {showSearchAreaButton && onSearchThisArea && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400]">
+          <button
+            onClick={handleSearchAreaClick}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-xl border border-cyan-400/40 backdrop-blur-md transition-all animate-bounce"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Search this area</span>
+          </button>
+        </div>
+      )}
 
-        {/* 4. Cyber Dark */}
-        <button
-          onClick={() => setMapLayer('cyber')}
-          className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-            mapLayer === 'cyber'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-bold'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-          }`}
-          title="Cyber Dark Cockpit Mode"
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Cyber Dark</span>
-        </button>
-
-        {/* Locate Me Button on Map Toolbar */}
+      {/* Top Right: Map Tools (Fit Bounds & Locate Me) */}
+      <div className="absolute top-4 right-4 z-[400] flex items-center gap-1.5">
         {onLocateMe && (
           <button
             onClick={onLocateMe}
-            className="p-1.5 rounded-lg bg-slate-800/90 text-cyan-400 hover:text-white hover:bg-cyan-500/20 border border-cyan-500/30 transition"
+            className="p-2 rounded-xl bg-slate-900/90 text-cyan-400 hover:text-white hover:bg-slate-800 border border-slate-700 backdrop-blur-md shadow-xl transition-all"
             title="Pan to My Current GPS Position"
           >
             <LocateFixed className="w-4 h-4" />
           </button>
         )}
 
-        {/* Reset View & Fit Bounds Button */}
         <button
-          onClick={() => setTriggerFit(p => p + 1)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          title="Fit View to All Visible Stations / Route"
+          onClick={() => setFitTrigger((p) => p + 1)}
+          className="p-2 rounded-xl bg-slate-900/90 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 backdrop-blur-md shadow-xl transition-all"
+          title="Fit view to all stations and route"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
-
       </div>
 
-      {/* Floating Status Pill on Bottom Left */}
-      <div className="absolute bottom-4 left-4 z-[400] bg-[#06151B]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/30 text-[11px] font-mono text-slate-200 flex items-center space-x-2 shadow-xl">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-cyan-400 font-bold">
-          {routeWaypoints.length > 1 ? 'OSRM EV Route Active' : 'Live Google Maps Radar'}
-        </span>
-        <span className="text-slate-500">•</span>
-        <span>
-          {routeWaypoints.length > 1
-            ? `${stations.length} Corridor Chargers Discovered`
-            : `${stations.length} Nearby Stations Active`}
-        </span>
-      </div>
-
-      {/* Google Maps Live Traffic Legend Pill on Bottom Right */}
-      {mapLayer === 'google-traffic' && (
-        <div className="absolute bottom-4 right-4 z-[400] bg-white/95 text-slate-800 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-300 shadow-xl flex items-center space-x-2 text-[11px] font-medium pointer-events-none">
-          <span className="text-slate-600 font-semibold">Live traffic</span>
-          <span className="text-slate-400 text-xs">Fast</span>
-          <div className="flex items-center space-x-0.5">
-            <span className="w-4 h-2 rounded-sm bg-[#22C55E]" title="Fast / Uncongested"></span>
-            <span className="w-4 h-2 rounded-sm bg-[#EAB308]" title="Moderate"></span>
-            <span className="w-4 h-2 rounded-sm bg-[#F97316]" title="Slow"></span>
-            <span className="w-4 h-2 rounded-sm bg-[#DC2626]" title="Heavy Traffic"></span>
-          </div>
-          <span className="text-slate-400 text-xs">Slow</span>
-        </div>
-      )}
-
+      {/* Leaflet MapContainer */}
       <MapContainer
-        center={activeCenter}
+        center={mapCenter}
         zoom={zoom}
         scrollWheelZoom={true}
-        className="w-full h-full z-10"
+        className={`w-full h-full z-10 ${layerConfig.cssClass || ''}`}
       >
-        <MapController 
-          center={activeCenter} 
-          waypoints={routeWaypoints} 
-          stations={stations}
+        <MapController
+          center={mapCenter}
+          zoom={zoom}
           userLocation={userLocation}
           destinationLocation={destinationLocation}
           waypointLocation={waypointLocation}
+          routeWaypoints={routeWaypoints}
           selectedStationId={selectedStationId}
-          triggerFit={triggerFit} 
+          stations={stations}
+          fitTrigger={fitTrigger}
+          onMapMoved={() => setShowSearchAreaButton(true)}
         />
 
-        {/* 1. GOOGLE LIVE TRAFFIC TILES (Roadmap + Real-Time Flow Colors) */}
-        {mapLayer === 'google-traffic' && (
+        {/* Base Map Layer */}
+        <TileLayer
+          attribution={layerConfig.attribution}
+          url={layerConfig.url}
+          maxZoom={layerConfig.maxZoom}
+          subdomains={layerConfig.subdomains || ['a', 'b', 'c']}
+        />
+
+        {/* Optional Overlay Layer (e.g. for Hybrid) */}
+        {layerConfig.overlayUrl && (
           <TileLayer
-            attribution='&copy; Google Maps &bull; Live Traffic'
-            url="https://mt{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}"
-            subdomains={['0', '1', '2', '3']}
-            maxZoom={20}
+            attribution={layerConfig.overlayAttribution || ''}
+            url={layerConfig.overlayUrl}
+            maxZoom={layerConfig.maxZoom}
           />
         )}
 
-        {/* 2. GOOGLE ROADMAP TILES */}
-        {mapLayer === 'google-roadmap' && (
-          <TileLayer
-            attribution='&copy; Google Maps'
-            url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-            subdomains={['0', '1', '2', '3']}
-            maxZoom={20}
+        {/* User GPS Accuracy Circle */}
+        {userLocation && userAccuracy && userAccuracy > 0 && (
+          <Circle
+            center={userLocation}
+            radius={userAccuracy}
+            pathOptions={{
+              color: '#3b82f6',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.12,
+              weight: 1,
+            }}
           />
         )}
 
-        {/* 3. GOOGLE SATELLITE / HYBRID TILES */}
-        {mapLayer === 'google-satellite' && (
-          <TileLayer
-            attribution='&copy; Google Maps Satellite'
-            url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-            subdomains={['0', '1', '2', '3']}
-            maxZoom={20}
-          />
-        )}
-
-        {/* 4. CYBER DARK: CartoDB Voyager tiles */}
-        {mapLayer === 'cyber' && (
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            maxZoom={19}
-          />
-        )}
-
-        {/* 5. STREET MAP MODE: Standard OpenStreetMap */}
-        {mapLayer === 'streets' && (
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={19}
-          />
-        )}
-
-        {/* Real User GPS Location Marker */}
+        {/* User GPS Location Marker */}
         {userLocation && (
           <Marker position={userLocation} icon={createUserLocationIcon()}>
             <Popup>
-              <div className="p-1 space-y-1 text-xs font-sans">
-                <p className="font-bold text-[#1A73E8] flex items-center gap-1">
-                  <span>📍</span> Your Current GPS Location
+              <div className="p-1 space-y-1 text-xs font-sans text-slate-900">
+                <p className="font-bold text-blue-600 flex items-center gap-1">
+                  <span>📍</span> Your Live GPS Location
                 </p>
-                <p className="text-[11px] font-mono text-slate-700">
-                  Lat: {userLocation[0].toFixed(5)}, Lng: {userLocation[1].toFixed(5)}
+                <p className="text-[11px] font-mono text-slate-600">
+                  {userLocation[0].toFixed(5)}, {userLocation[1].toFixed(5)}
                 </p>
-                <p className="text-[10px] text-slate-500">Browser GPS Signal Verified &bull; High Accuracy</p>
+                {userAccuracy && (
+                  <p className="text-[10px] text-slate-500">Accuracy: ~{userAccuracy}m</p>
+                )}
               </div>
             </Popup>
           </Marker>
@@ -403,33 +414,45 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         {destinationLocation && (
           <Marker position={destinationLocation} icon={destinationPinIcon}>
             <Popup>
-              <div className="p-1 space-y-1 text-xs font-sans">
-                <p className="font-bold text-rose-500">🎯 Destination Terminal</p>
-                <p className="text-[11px] font-mono text-slate-700">
-                  Lat: {destinationLocation[0].toFixed(5)}, Lng: {destinationLocation[1].toFixed(5)}
+              <div className="p-1 text-xs font-sans text-slate-900">
+                <p className="font-bold text-rose-600">🎯 Destination Terminal</p>
+                <p className="text-[11px] font-mono text-slate-600">
+                  {destinationLocation[0].toFixed(5)}, {destinationLocation[1].toFixed(5)}
                 </p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Intermediate Waypoint Marker */}
+        {/* Waypoint Marker */}
         {waypointLocation && (
           <Marker position={waypointLocation} icon={waypointPinIcon}>
             <Popup>
-              <div className="p-1.5 space-y-1 text-xs font-sans">
-                <p className="font-bold text-amber-500 flex items-center gap-1">
-                  <span>🔌</span> Route Charging Waypoint
-                </p>
-                <p className="text-[11px] font-mono text-slate-700">
-                  Lat: {waypointLocation[0].toFixed(5)}, Lng: {waypointLocation[1].toFixed(5)}
+              <div className="p-1 text-xs font-sans text-slate-900">
+                <p className="font-bold text-amber-600">🔌 Charging Waypoint</p>
+                <p className="text-[11px] font-mono text-slate-600">
+                  {waypointLocation[0].toFixed(5)}, {waypointLocation[1].toFixed(5)}
                 </p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Google Maps Styled Red Charging Station Markers */}
+        {/* Route Polyline */}
+        {routeWaypoints && routeWaypoints.length > 1 && (
+          <Polyline
+            positions={routeWaypoints as [number, number][]}
+            pathOptions={{
+              color: '#06b6d4',
+              weight: 5,
+              opacity: 0.9,
+              lineCap: 'round',
+              lineJoin: 'round',
+            }}
+          />
+        )}
+
+        {/* EV Station Markers */}
         {stations.map((station) => {
           const isSelected = selectedStationId === station.id;
           return (
@@ -438,95 +461,43 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               position={[station.latitude, station.longitude]}
               icon={createStationIcon(station, isSelected)}
               eventHandlers={{
-                click: () => onSelectStation && onSelectStation(station)
+                click: () => onSelectStation?.(station),
               }}
             >
               <Popup>
-                <div className="p-2 space-y-2 text-xs font-sans max-w-[260px] text-slate-800">
-                  <div className="flex items-start justify-between border-b border-slate-200 pb-1.5">
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm leading-tight">{station.station_name}</h4>
-                      <div className="flex items-center space-x-1 text-[11px] text-amber-600 mt-0.5">
-                        <span className="font-bold">{station.rating || 4.2}</span>
-                        <span>★</span>
-                        <span className="text-slate-500">({station.reviews_count || 15})</span>
-                        <span className="text-slate-400">&bull;</span>
-                        <span className="text-slate-600">{station.operator}</span>
-                      </div>
-                    </div>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-bold">
-                      {Math.round(station.charging_power)} kW
-                    </span>
-                  </div>
-
+                <div className="p-1.5 space-y-1.5 text-xs font-sans max-w-[240px] text-slate-900">
+                  <h4 className="font-bold text-slate-950 text-sm leading-tight">
+                    {station.station_name}
+                  </h4>
                   <p className="text-[11px] text-slate-600 leading-snug">{station.address}</p>
 
-                  {/* Ports detail breakdown */}
-                  <div className="space-y-1 pt-1 border-t border-slate-100">
-                    {(station.ports_detail || [
-                      { connector: station.connector_type || 'CCS', power_kw: station.charging_power, available: 2, total: 2 }
-                    ]).map((port, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-[11px] bg-slate-50 px-2 py-0.5 rounded">
-                        <span className="font-medium text-slate-700 flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-cyan-600" />
-                          <span>{port.connector} &bull; {port.power_kw} kW</span>
-                        </span>
-                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                          port.available > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                        }`}>
-                          {port.available}/{port.total}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-[11px]">
+                    <span className="font-semibold text-emerald-600">⚡ {station.charging_power} kW</span>
+                    <span className="text-slate-500">{station.connector_type || 'Type 2'}</span>
                   </div>
 
-                  {/* Quick Action in Popup */}
-                  <div className="flex items-center justify-between pt-1 text-[11px] font-medium">
+                  {station.pricing_text && (
+                    <div className="text-[10px] text-slate-500">
+                      Pricing: <span className="font-medium text-slate-700">{station.pricing_text}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1 flex gap-2">
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}&travelmode=driving`}
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#1A73E8] hover:underline flex items-center gap-0.5"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-cyan-700 hover:text-cyan-800 underline"
                     >
+                      <Navigation className="w-3 h-3" />
                       <span>Directions</span>
-                      <ExternalLink className="w-3 h-3" />
                     </a>
-                    {station.distance_km !== undefined && (
-                      <span className="text-slate-500 font-mono">{station.distance_km} km away</span>
-                    )}
                   </div>
                 </div>
               </Popup>
             </Marker>
           );
         })}
-
-        {/* Google Maps Style Blue Navigation Polyline */}
-        {routeWaypoints.length > 1 && (
-          <>
-            {/* Outer Cyan Glow Accent */}
-            <Polyline
-              positions={routeWaypoints as [number, number][]}
-              pathOptions={{
-                color: '#20D6C2',
-                weight: 9,
-                opacity: 0.45,
-                lineJoin: 'round'
-              }}
-            />
-            {/* Inner Google Navigation Blue Line */}
-            <Polyline
-              positions={routeWaypoints as [number, number][]}
-              pathOptions={{
-                color: '#1A73E8',
-                weight: 5,
-                opacity: 0.98,
-                lineJoin: 'round'
-              }}
-            />
-          </>
-        )}
-
       </MapContainer>
     </div>
   );

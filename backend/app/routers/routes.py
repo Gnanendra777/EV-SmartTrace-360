@@ -67,8 +67,10 @@ async def get_directions_route(
         return data
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as re:
+        raise HTTPException(status_code=503, detail=str(re))
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Could not compute driving route. Please try again.")
+        raise HTTPException(status_code=500, detail="Could not compute driving route. Please check coordinates and try again.")
 
 
 @router.post("/calculate", response_model=RouteCalculateResponse)
@@ -112,6 +114,8 @@ async def calculate_smart_ev_route(
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        raise HTTPException(status_code=503, detail=str(re))
     except Exception:
         raise HTTPException(status_code=500, detail="Could not compute driving route. Please check coordinates and try again.")
 

@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
-    "types": ["vite/client"],
+    "types": ["vite/client", "@types/google.maps"],
     "paths": {
       "@/*": ["src/*"]
     }

@@ -16,8 +16,9 @@ from app.schemas.charging import (
 from app.security.auth import get_current_user
 from app.services.open_charge_map_service import (
     fetch_open_charge_map_stations,
+    fetch_stations_in_bounds,
     haversine_distance,
-    get_fallback_stations
+    get_offline_sample_stations
 )
 
 router = APIRouter(tags=["Charging & Stations"])
@@ -201,6 +202,30 @@ async def get_nearby_stations(
     return results
 
 
+@router.get("/stations/in-bounds", response_model=List[ChargingStationOut])
+async def get_stations_in_bounds(
+    south: float = Query(..., ge=-90.0, le=90.0, description="South latitude boundary"),
+    west: float = Query(..., ge=-180.0, le=180.0, description="West longitude boundary"),
+    north: float = Query(..., ge=-90.0, le=90.0, description="North latitude boundary"),
+    east: float = Query(..., ge=-180.0, le=180.0, description="East longitude boundary"),
+    connector_type: Optional[str] = Query(None),
+    min_power: Optional[float] = Query(None)
+):
+    """
+    Fetch EV charging stations within visible viewport bounding box.
+    Enables 'Search this area' behavior as the user pans or zooms the map.
+    """
+    stations = await fetch_stations_in_bounds(
+        south=south,
+        west=west,
+        north=north,
+        east=east,
+        connector_type=connector_type,
+        min_power=min_power
+    )
+    return [ChargingStationOut(**s) for s in stations]
+
+
 @router.get("/stations/search", response_model=List[ChargingStationOut])
 async def search_stations(
     query: str = Query(..., min_length=2),
@@ -209,8 +234,12 @@ async def search_stations(
     distance_km: float = Query(50.0)
 ):
     """Search for charging stations matching query or location."""
-    user_lat = latitude if latitude is not None else 28.6139
-    user_lon = longitude if longitude is not None else 77.2090
+    if latitude is None or longitude is None:
+        # Return matching stations from local database if no GPS coords passed
+        return []
+
+    user_lat = latitude
+    user_lon = longitude
 
     stations = await fetch_open_charge_map_stations(
         lat=user_lat,
@@ -240,16 +269,13 @@ async def get_station_details(
     if db_station:
         return ChargingStationOut.from_orm(db_station)
 
-    # Fallback search around coordinates
-    user_lat = latitude if latitude is not None else 28.6139
-    user_lon = longitude if longitude is not None else 77.2090
-    stations = await fetch_open_charge_map_stations(lat=user_lat, lon=user_lon, distance_km=50.0)
-
-    for s in stations:
-        if s["id"] == station_id:
-            return ChargingStationOut(**s)
-
-    if stations:
-        return ChargingStationOut(**stations[0])
+    # Fallback search around coordinates if supplied
+    if latitude is not None and longitude is not None:
+        stations = await fetch_open_charge_map_stations(lat=latitude, lon=longitude, distance_km=50.0)
+        for s in stations:
+            if s["id"] == station_id:
+                return ChargingStationOut(**s)
+        if stations:
+            return ChargingStationOut(**stations[0])
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Charging station not found.")

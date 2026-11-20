@@ -178,6 +178,11 @@ async def run_tests():
         assert len(st_data) > 0
         print(f"Nearby Stations -> PASS: Retrieved {len(st_data)} stations. First: {st_data[0]['station_name']} ({st_data[0]['distance_km']} km)")
 
+        # 1b. In-bounds stations for viewport search
+        bounds_res = await client.get("/api/stations/in-bounds?south=28.5&west=77.1&north=28.7&east=77.3")
+        assert bounds_res.status_code == 200
+        print(f"In-bounds Stations -> PASS: Retrieved {len(bounds_res.json())} stations in viewport")
+
         # 2. Station search
         st_search = await client.get("/api/stations/search?query=hub&latitude=28.6139&longitude=77.2090")
         assert st_search.status_code == 200

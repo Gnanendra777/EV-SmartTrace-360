@@ -23,15 +23,8 @@ INSERT INTO vehicles (
     'EV-ST360-9842-DEMO', 70.0, 0.150, TRUE, NOW()
 ) ON DUPLICATE KEY UPDATE vehicle_name=vehicle_name;
 
--- 3. Realistic Charging Stations
-INSERT INTO charging_stations (id, station_name, address, latitude, longitude, operator, charging_power, connector_type, availability_status, pricing_per_kwh)
-VALUES 
-(1, 'Supercharge Hub - Silicon Metro', '101 Tech Blvd, Metro Central', 37.7749, -122.4194, 'Tesla Supercharger', 250.0, 'CCS2 / NACS', 'Available (8/12 Open)', 0.32),
-(2, 'Electrify Express - Harbor Bay', '450 Marina Way, Bayside', 37.7891, -122.4014, 'Electrify America', 150.0, 'CCS2 / CHAdeMO', 'Available (4/6 Open)', 0.35),
-(3, 'GreenGrid Fast Charge - Sunset Point', '820 Ocean Ave, West Coast', 37.7601, -122.4822, 'EVgo', 100.0, 'CCS2 / Type 2', 'Available (2/4 Open)', 0.28),
-(4, 'VoltPoint Urban Charger', '12 Civic Center Plaza', 37.7793, -122.4184, 'ChargePoint', 50.0, 'Type 2 / AC Fast', 'Occupied (All in Use)', 0.22),
-(5, 'EcoCharge Highway Oasis - Exit 42', 'Highway 101 Northbound Rest Area', 37.8205, -122.3789, 'BP Pulse', 180.0, 'CCS2', 'Available (5/8 Open)', 0.30)
-ON DUPLICATE KEY UPDATE station_name=station_name;
+-- 3. Realistic Charging Stations (Omitted in favor of live dynamic providers)
+-- Stations are fetched live from Overpass / Open Charge Map
 
 -- 4. Initial Diagnostic Records
 INSERT INTO vehicle_diagnostics (vehicle_id, component, fault_code, description, severity, sensor_value, expected_range, recommendation, detection_source, detected_at)

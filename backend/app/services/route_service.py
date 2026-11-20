@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.models.vehicle import Vehicle
 from app.models.charging import ChargingStation
 from app.schemas.routes import RouteOption, RouteChargingStopDetail, RouteOptimizeResponse
@@ -15,6 +15,19 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
          math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
+
+def parse_coordinate_pair(text: str) -> Optional[tuple[float, float]]:
+    """Helper to parse 'lat, lng' or 'lat,lng' string into a float tuple."""
+    if not text:
+        return None
+    try:
+        parts = [float(p.strip()) for p in text.split(",")]
+        if len(parts) == 2 and -90.0 <= parts[0] <= 90.0 and -180.0 <= parts[1] <= 180.0:
+            return (parts[0], parts[1])
+    except Exception:
+        pass
+    return None
 
 
 def optimize_ev_routes(
@@ -35,25 +48,29 @@ def optimize_ev_routes(
     available_energy = battery_cap * (current_battery_pct / 100.0)
     base_eff = float(vehicle.efficiency_kwh_km)
 
-    # Coordinates mapping for common demo locations or default San Francisco metro coordinates
-    demo_coords = {
-        "san francisco": (37.7749, -122.4194),
-        "san jose": (37.3382, -121.8863),
-        "oakland": (37.8044, -122.2712),
-        "palo alto": (37.4419, -122.1430),
-        "sacramento": (38.5816, -121.4944),
-        "los angeles": (34.0522, -118.2437)
-    }
+    orig_coords = parse_coordinate_pair(origin)
+    dest_coords = parse_coordinate_pair(destination)
 
-    orig_lower = origin.lower().strip()
-    dest_lower = destination.lower().strip()
+    if orig_coords and dest_coords:
+        start_lat, start_lng = orig_coords
+        end_lat, end_lng = dest_coords
+        straight_dist = calculate_haversine_distance(start_lat, start_lng, end_lat, end_lng)
+    elif available_stations and len(available_stations) >= 2:
+        start_lat, start_lng = float(available_stations[0].latitude), float(available_stations[0].longitude)
+        end_lat, end_lng = float(available_stations[-1].latitude), float(available_stations[-1].longitude)
+        straight_dist = calculate_haversine_distance(start_lat, start_lng, end_lat, end_lng)
+    elif available_stations and len(available_stations) == 1:
+        start_lat, start_lng = float(available_stations[0].latitude), float(available_stations[0].longitude)
+        end_lat, end_lng = start_lat + 0.15, start_lng + 0.15
+        straight_dist = calculate_haversine_distance(start_lat, start_lng, end_lat, end_lng)
+    else:
+        # Default fallback distance when coordinates cannot be derived
+        start_lat, start_lng = 0.0, 0.0
+        end_lat, end_lng = 0.2, 0.2
+        straight_dist = 25.0
 
-    start_lat, start_lng = demo_coords.get(orig_lower, (37.7749, -122.4194))
-    end_lat, end_lng = demo_coords.get(dest_lower, (37.3382, -121.8863))
-
-    straight_dist = calculate_haversine_distance(start_lat, start_lng, end_lat, end_lng)
-    if straight_dist < 10.0:
-        straight_dist = 68.0 # Standard demo corridor distance (SF to Silicon Valley)
+    if straight_dist < 1.0:
+        straight_dist = 5.0
 
     # 1. Fastest Route
     fastest_dist = round(straight_dist * 1.15, 1)
