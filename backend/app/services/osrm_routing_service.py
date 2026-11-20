@@ -50,6 +50,26 @@ async def calculate_osrm_route(
     NOTE: OSRM expects coordinates in {longitude},{latitude} order!
     Returns distance in km, duration in minutes, and geometry as list of [lat, lon] for Leaflet.
     """
+    # 1. Validate coordinate boundaries
+    if not (-90.0 <= start_lat <= 90.0 and -90.0 <= end_lat <= 90.0):
+        raise ValueError("Latitude must be between -90 and 90 degrees.")
+    if not (-180.0 <= start_lon <= 180.0 and -180.0 <= end_lon <= 180.0):
+        raise ValueError("Longitude must be between -180 and 180 degrees.")
+
+    from app.services.open_charge_map_service import haversine_distance
+    direct_km = haversine_distance(start_lat, start_lon, end_lat, end_lon)
+
+    # 2. Check for identical or sub-20m locations
+    if direct_km < 0.02:
+        return {
+            "distance_km": 0.0,
+            "duration_minutes": 0,
+            "duration_formatted": "0 mins (At destination)",
+            "geometry": [[start_lat, start_lon], [end_lat, end_lon]],
+            "is_osrm": True,
+            "note": "Starting location and destination are at the same point."
+        }
+
     base_url = osrm_base_url or os.getenv("OSRM_ROUTING_SERVICE_URL", "https://router.project-osrm.org").rstrip("/")
     
     # Build coordinate string: lon1,lat1;lon_via,lat_via;...;lon2,lat2
@@ -58,7 +78,7 @@ async def calculate_osrm_route(
     if waypoints:
         for wp in waypoints:
             # wp is [lat, lon]
-            if len(wp) >= 2:
+            if len(wp) >= 2 and -90.0 <= wp[0] <= 90.0 and -180.0 <= wp[1] <= 180.0:
                 coord_parts.append(f"{wp[1]:.6f},{wp[0]:.6f}")
 
     coord_parts.append(f"{end_lon:.6f},{end_lat:.6f}")
@@ -75,13 +95,14 @@ async def calculate_osrm_route(
     url = f"{base_url}/route/v1/driving/{coords_param}?overview=full&geometries=geojson"
 
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             headers = {"User-Agent": "EV-SmartTrace-360-Navigator/1.0"}
             response = await client.get(url, headers=headers)
 
             if response.status_code == 200:
                 data = response.json()
-                if data.get("code") == "Ok" and data.get("routes"):
+                code = data.get("code")
+                if code == "Ok" and data.get("routes"):
                     route_obj = data["routes"][0]
                     distance_km = round(route_obj["distance"] / 1000.0, 2)
                     duration_mins = max(1, int(math.ceil(route_obj["duration"] / 60.0)))
@@ -100,14 +121,23 @@ async def calculate_osrm_route(
                     }
                     _ROUTE_CACHE[cache_key] = (now, result)
                     return result
+                elif code == "NoRoute":
+                    raise ValueError("No drivable road route connects these two locations (e.g. crossing oceans or isolated regions). Please choose a reachable road destination.")
+                elif code == "NoSegment":
+                    raise ValueError("One or both coordinates cannot be matched to a navigable road network. Please select coordinates near a public road.")
+                elif code == "InvalidQuery":
+                    raise ValueError("Invalid coordinate query format provided to routing engine.")
 
+    except ValueError:
+        raise
     except Exception as exc:
         logger.warning("OSRM routing service request exception: %s", type(exc).__name__)
 
-    # Fallback to Haversine computation if external service is unavailable
-    from app.services.open_charge_map_service import haversine_distance
-    straight_km = haversine_distance(start_lat, start_lon, end_lat, end_lon)
-    road_km = round(straight_km * 1.25, 2)
+    # Fallback to Haversine computation if external service is momentarily unreachable and distance is reasonable (< 1500 km)
+    if direct_km > 2000.0:
+        raise ValueError("Could not compute driving route. Locations appear to be on different continents or separated by unbridgeable water.")
+
+    road_km = round(direct_km * 1.25, 2)
     est_mins = max(2, int(road_km / 65.0 * 60))
 
     fallback_result = {

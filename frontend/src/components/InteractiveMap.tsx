@@ -71,26 +71,22 @@ export const createStationIcon = (station: ChargingStation, isSelected: boolean 
   });
 };
 
-// 3. Destination Checkered Flag Marker
+// 3. Modern Sleek Destination Terminal Marker (No Checkered Flag)
 export const destinationPinIcon = L.divIcon({
   className: 'custom-destination-pin',
   html: `
-    <div style="
-      background: #F15B65;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: 2px solid #ffffff;
-      box-shadow: 0 0 16px rgba(241, 91, 101, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      color: white;
-    ">🏁</div>
+    <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+      <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(244, 63, 94, 0.35); animation: ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+      <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #F43F5E; border: 2.5px solid #ffffff; box-shadow: 0 0 16px rgba(244, 63, 94, 0.95); display: flex; align-items: center; justify-content: center;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: #ffffff;"></div>
+      </div>
+      <div style="position: absolute; bottom: -15px; white-space: nowrap; background: rgba(6, 21, 27, 0.95); border: 1px solid #F43F5E; color: #FFF; font-family: monospace; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 4px;">
+        DESTINATION
+      </div>
+    </div>
   `,
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
+  iconSize: [34, 34],
+  iconAnchor: [17, 17]
 });
 
 // 4. Waypoint / Charging Stop Marker
@@ -354,7 +350,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           <Marker position={destinationLocation} icon={destinationPinIcon}>
             <Popup>
               <div className="p-1 space-y-1 text-xs font-sans">
-                <p className="font-bold text-rose-400">🏁 Destination Terminal</p>
+                <p className="font-bold text-rose-400">🎯 Destination Terminal</p>
                 <p className="text-[11px] font-mono text-slate-300">
                   Lat: {destinationLocation[0].toFixed(5)}, Lng: {destinationLocation[1].toFixed(5)}
                 </p>

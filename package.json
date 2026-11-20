@@ -1,0 +1,9 @@
+{
+  "name": "ev-smarttrace-360",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EV SmartTrace 360 - AI-Powered Electric Vehicle Intelligence Platform",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
+  }
+}

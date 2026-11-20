@@ -52,6 +52,19 @@ export const ChargingStationsPage: React.FC = () => {
   const [powerRange, setPowerRange] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'distance' | 'power'>('distance');
 
+  // Driving Route to Selected Station State
+  const [activeStationRoute, setActiveStationRoute] = useState<{
+    stationId: number;
+    stationName: string;
+    distance_km: number;
+    duration_minutes: number;
+    duration_formatted: string;
+    geometry: [number, number][];
+    is_osrm: boolean;
+  } | null>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState<boolean>(false);
+  const [routeCalcError, setRouteCalcError] = useState<string | null>(null);
+
   // Trigger GPS location detection
   const handleDetectLocation = useCallback(async () => {
     setGpsError(null);
@@ -64,14 +77,17 @@ export const ChargingStationsPage: React.FC = () => {
       fetchNearbyStations(loc.lat, loc.lng, distanceKm, connectorFilter);
     } catch (err: any) {
       console.warn('Geolocation notice:', err.message);
-      setGpsError(err.message || 'GPS location permission denied or timed out.');
-      setLocationStatus('GPS Unavailable (Using Regional Fallback)');
-      
-      // Default corridor coordinates if GPS is blocked
-      const fallbackLat = 28.6139;
-      const fallbackLng = 77.2090;
-      setUserLocation([fallbackLat, fallbackLng]);
-      fetchNearbyStations(fallbackLat, fallbackLng, distanceKm, connectorFilter);
+      setGpsError(err.message || 'GPS location permission was denied or timed out.');
+      setUserLocation(prev => {
+        if (prev) {
+          setLocationStatus(`GPS Preserved (${formatCoordinates(prev[0], prev[1])})`);
+          // Re-fetch for preserved coordinates
+          fetchNearbyStations(prev[0], prev[1], distanceKm, connectorFilter);
+          return prev;
+        }
+        setLocationStatus('GPS Signal Unavailable');
+        return null;
+      });
     }
   }, [distanceKm, connectorFilter]);
 
@@ -99,11 +115,51 @@ export const ChargingStationsPage: React.FC = () => {
       }
     } catch (e: any) {
       console.error('Error fetching charging stations:', e);
-      setStationFetchError('Could not load live charging stations. Regional verified corridor data active.');
+      setStationFetchError('Could not load live charging stations from data provider.');
     } finally {
       setIsLoadingStations(false);
     }
   };
+
+  // Compute Shortest Road Route to Station via OSRM
+  const handleGetShortestRoute = async (station: ChargingStation) => {
+    if (!userLocation) {
+      setGpsError('GPS location required to calculate route to station. Click "Locate Me".');
+      return;
+    }
+    setIsCalculatingRoute(true);
+    setRouteCalcError(null);
+    try {
+      const res = await api.getDirectionsRoute(
+        userLocation[0],
+        userLocation[1],
+        station.latitude,
+        station.longitude
+      );
+      setActiveStationRoute({
+        stationId: station.id,
+        stationName: station.station_name,
+        distance_km: res.distance_km,
+        duration_minutes: res.duration_minutes,
+        duration_formatted: res.duration_formatted,
+        geometry: res.geometry,
+        is_osrm: res.is_osrm
+      });
+      setSelectedStation(station);
+    } catch (err: any) {
+      console.error('Failed to calculate shortest station route:', err);
+      const detail = err.response?.data?.detail;
+      setRouteCalcError(detail || 'Could not compute road driving route to this station.');
+    } finally {
+      setIsCalculatingRoute(false);
+    }
+  };
+
+  const handleClearRoute = () => {
+    setActiveStationRoute(null);
+    setRouteCalcError(null);
+  };
+
 
   useEffect(() => {
     handleDetectLocation();
@@ -413,13 +469,50 @@ export const ChargingStationsPage: React.FC = () => {
         {/* LEFT SIDE: APPROXIMATELY 65% WIDTH (8 columns on desktop) */}
         <div className="lg:col-span-8 flex flex-col min-h-[580px] lg:min-h-[720px] space-y-3">
           
+          {/* Active Station Route Highlight Banner */}
+          {activeStationRoute && (
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#06151B] to-[#0A262E] border border-cyan-400 text-xs flex items-center justify-between shadow-2xl animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 font-bold">
+                  🛣️
+                </div>
+                <div>
+                  <div className="text-white font-bold flex items-center gap-2">
+                    <span>Shortest Available Driving Route to {activeStationRoute.stationName}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                      OSRM Live
+                    </span>
+                  </div>
+                  <div className="text-slate-300 font-mono text-xs mt-0.5">
+                    Available route: <strong className="text-cyan-300">{activeStationRoute.distance_km} km</strong> • <strong className="text-emerald-400">{activeStationRoute.duration_formatted}</strong> driving time
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleClearRoute}
+                className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold border border-rose-500/30 transition"
+              >
+                Clear Route
+              </button>
+            </div>
+          )}
+
+          {routeCalcError && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+              <span>{routeCalcError}</span>
+              <button onClick={() => setRouteCalcError(null)} className="text-rose-400 hover:text-white font-bold">✕</button>
+            </div>
+          )}
+
           <div className="w-full flex-1 min-h-[580px] lg:min-h-[700px]">
             <InteractiveMap
               stations={filteredStations}
+              routeWaypoints={activeStationRoute?.geometry || []}
+              destinationLocation={activeStationRoute && selectedStation ? [selectedStation.latitude, selectedStation.longitude] : null}
               userLocation={userLocation}
               selectedStationId={selectedStation?.id}
-              center={userLocation || [28.6139, 77.2090]}
-              zoom={12}
+              center={userLocation || (filteredStations.length > 0 ? [filteredStations[0].latitude, filteredStations[0].longitude] : [20.5937, 78.9629])}
+              zoom={userLocation ? 13 : 11}
               onSelectStation={(st) => setSelectedStation(st)}
               onLocateMe={handleDetectLocation}
               className="h-full w-full"
@@ -533,31 +626,49 @@ export const ChargingStationsPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStation.latitude},${selectedStation.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-cyan-500/20"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span>Get Directions</span>
-                </a>
-
+              <div className="space-y-2 pt-1">
                 <button
-                  onClick={() => {
-                    navigate('/navigation', {
-                      state: {
-                        destinationCoords: [selectedStation.latitude, selectedStation.longitude],
-                        destinationName: selectedStation.station_name
-                      }
-                    });
-                  }}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+                  type="button"
+                  onClick={() => handleGetShortestRoute(selectedStation)}
+                  disabled={isCalculatingRoute}
+                  className="w-full px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
                 >
-                  <Route className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Plan EV Route</span>
+                  <Route className="w-4 h-4" />
+                  <span>
+                    {isCalculatingRoute
+                      ? 'Computing Route...'
+                      : activeStationRoute?.stationId === selectedStation.id
+                      ? 'Route Displayed on Map (Active)'
+                      : 'Get Shortest Available Route'}
+                  </span>
                 </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation ? `${userLocation[0]},${userLocation[1]}` : ''}&destination=${selectedStation.latitude},${selectedStation.longitude}&travelmode=driving`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold text-xs border border-cyan-500/40 flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Get Directions</span>
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      navigate('/navigation', {
+                        state: {
+                          destinationCoords: [selectedStation.latitude, selectedStation.longitude],
+                          destinationName: selectedStation.station_name
+                        }
+                      });
+                    }}
+                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Navigation className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Plan EV Route</span>
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -674,28 +785,48 @@ export const ChargingStationsPage: React.FC = () => {
                       </div>
 
                       {/* Card Action Buttons */}
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 gap-2">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedStation(st);
+                            handleGetShortestRoute(st);
                           }}
-                          className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 font-semibold"
+                          disabled={isCalculatingRoute}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border flex items-center gap-1 transition ${
+                            activeStationRoute?.stationId === st.id
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                              : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/30 text-cyan-300'
+                          }`}
                         >
-                          View Specifications →
+                          <Route className="w-3.5 h-3.5" />
+                          <span>{activeStationRoute?.stationId === st.id ? 'Route Active' : 'Shortest Route'}</span>
                         </button>
 
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${st.latitude},${st.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[11px] font-bold border border-cyan-500/30 flex items-center gap-1 transition"
-                        >
-                          <Navigation className="w-3 h-3" />
-                          <span>Get Directions</span>
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStation(st);
+                            }}
+                            className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 font-semibold"
+                          >
+                            Details →
+                          </button>
+
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation ? `${userLocation[0]},${userLocation[1]}` : ''}&destination=${st.latitude},${st.longitude}&travelmode=driving`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-medium border border-slate-800 flex items-center gap-1 transition"
+                            title="Open Google Maps driving directions"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Directions</span>
+                          </a>
+                        </div>
                       </div>
 
                     </div>

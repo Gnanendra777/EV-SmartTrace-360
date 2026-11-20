@@ -5,7 +5,6 @@ import {
   ChargingEstimate, DiagnosticReport, RouteOptimizeResult, 
   DashboardStats, NotificationItem, GeocodePlace, SmartRouteResult
 } from '../types';
-import { generateClientFallbackStations } from './locationService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
   typeof window !== 'undefined' && 
@@ -460,15 +459,40 @@ export const api = {
           max_results: maxResults
         }
       });
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
-      return generateClientFallbackStations(lat, lng, distanceKm);
+      return [];
     } catch (e) {
-      console.warn('Backend stations endpoint unreachable, generating GPS-centered verified stations:', e);
-      return generateClientFallbackStations(lat, lng, distanceKm);
+      console.warn('Backend stations endpoint notice:', e);
+      return [];
     }
   },
+
+  getDirectionsRoute: async (
+    startLat: number,
+    startLng: number,
+    endLat: number,
+    endLng: number
+  ): Promise<{
+    distance_km: number;
+    duration_minutes: number;
+    duration_formatted: string;
+    geometry: [number, number][];
+    is_osrm: boolean;
+    note?: string;
+  }> => {
+    const res = await apiClient.get('/routes/directions', {
+      params: {
+        origin_lat: startLat,
+        origin_lng: startLng,
+        destination_lat: endLat,
+        destination_lng: endLng
+      }
+    });
+    return res.data;
+  },
+
 
   searchStations: async (
     query: string,

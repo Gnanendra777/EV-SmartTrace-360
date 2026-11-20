@@ -32,15 +32,6 @@ import { api } from '../services/api';
 import { requestUserLocation, formatCoordinates, searchPlaces } from '../services/locationService';
 import { SmartRouteResult, ChargingStation, GeocodePlace } from '../types';
 
-// Preset EV Destination Corridors for fast testing and 1-click routing
-const POPULAR_DESTINATIONS: { name: string; city: string; lat: number; lng: number }[] = [
-  { name: 'San Jose Tech Center', city: 'San Jose, CA', lat: 37.3382, lng: -121.8863 },
-  { name: 'Palo Alto Supercharger Hub', city: 'Palo Alto, CA', lat: 37.4419, lng: -122.1430 },
-  { name: 'San Francisco Financial District', city: 'San Francisco, CA', lat: 37.7946, lng: -122.4000 },
-  { name: 'Oakland Airport Charging Plaza', city: 'Oakland, CA', lat: 37.7126, lng: -122.2197 },
-  { name: 'Fremont Gigafactory Corridor', city: 'Fremont, CA', lat: 37.4925, lng: -121.9447 }
-];
-
 export const SmartNavigationPage: React.FC = () => {
   const { activeVehicle } = useAuth();
   const routeLocation = useLocation();
@@ -90,12 +81,17 @@ export const SmartNavigationPage: React.FC = () => {
     } catch (err: any) {
       console.warn('Geolocation notice:', err.message);
       setGpsPermissionDenied(true);
-      // Clean fallback if GPS is blocked or denied (San Francisco Bay Metro)
-      const fallbackCoords: [number, number] = [37.7749, -122.4194];
-      setOriginCoords(fallbackCoords);
-      setOriginName('San Francisco Metro (Fallback)');
+      // Retain last known coordinates if available; never fabricate fake foreign coordinates
+      setOriginCoords(prev => {
+        if (prev) {
+          setOriginName(`My GPS Location (Preserved: ${formatCoordinates(prev[0], prev[1])})`);
+          return prev;
+        }
+        setOriginName('GPS Unavailable (Search destination or retry)');
+        return null;
+      });
       setGpsAccuracy(null);
-      return fallbackCoords;
+      return null;
     } finally {
       setIsLocating(false);
     }
@@ -116,20 +112,16 @@ export const SmartNavigationPage: React.FC = () => {
         setDestinationName(routerState.destinationName || 'Selected Charging Station');
         setDestinationQuery(routerState.destinationName || 'Selected Charging Station');
         
-        // Auto-calculate route to the selected charging station
+        // Auto-calculate route to the selected charging station only
         if (currentOrigin) {
           calculateRoute(currentOrigin, routerState.destinationCoords, null);
         }
       } else {
-        // Set default initial destination (San Jose Tech Center)
-        const defaultDest = POPULAR_DESTINATIONS[0];
-        setDestinationCoords([defaultDest.lat, defaultDest.lng]);
-        setDestinationName(defaultDest.name);
-        setDestinationQuery(defaultDest.name);
-
-        if (currentOrigin) {
-          calculateRoute(currentOrigin, [defaultDest.lat, defaultDest.lng], null);
-        }
+        // Destination starts empty - no automatic North American route
+        setDestinationCoords(null);
+        setDestinationName('');
+        setDestinationQuery('');
+        setSmartRoute(null);
       }
     };
 
@@ -179,23 +171,22 @@ export const SmartNavigationPage: React.FC = () => {
     setShowSearchDropdown(false);
   };
 
-  const handleSelectQuickDestination = (dest: typeof POPULAR_DESTINATIONS[0]) => {
-    setDestinationCoords([dest.lat, dest.lng]);
-    setDestinationName(dest.name);
-    setDestinationQuery(`${dest.name}, ${dest.city}`);
-    setShowSearchDropdown(false);
-
-    if (originCoords) {
-      calculateRoute(originCoords, [dest.lat, dest.lng], waypointCoords);
-    }
-  };
-
   // 4. Calculate Route via Backend OSRM + EV Battery Model
   const calculateRoute = async (
     start: [number, number],
     end: [number, number],
     waypoint: [number, number] | null
   ) => {
+    if (!start || !end) {
+      setErrorMessage('Please provide both starting location and a valid destination.');
+      return;
+    }
+
+    if (Math.abs(start[0] - end[0]) < 0.0001 && Math.abs(start[1] - end[1]) < 0.0001) {
+      setErrorMessage('Starting location and destination are identical. Please enter a different destination.');
+      return;
+    }
+
     setIsLoadingRoute(true);
     setErrorMessage(null);
     try {
@@ -214,10 +205,12 @@ export const SmartNavigationPage: React.FC = () => {
       setSmartRoute(res);
     } catch (err: any) {
       console.error('Failed to calculate route:', err);
-      setErrorMessage(
-        err.response?.data?.detail || 
-        'Could not compute driving route. Please check coordinates and try again.'
-      );
+      const detail = err.response?.data?.detail;
+      if (typeof detail === 'string') {
+        setErrorMessage(detail);
+      } else {
+        setErrorMessage('Could not compute driving route. Please check coordinates and ensure a road path exists.');
+      }
     } finally {
       setIsLoadingRoute(false);
     }
@@ -225,12 +218,17 @@ export const SmartNavigationPage: React.FC = () => {
 
   const handleTriggerCalculate = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!originCoords || !destinationCoords) {
-      setErrorMessage('Please provide both a valid starting location and destination.');
+    if (!originCoords) {
+      setErrorMessage('Starting GPS location is required. Please click "Use GPS" to detect your position.');
+      return;
+    }
+    if (!destinationCoords) {
+      setErrorMessage('Please search for and select a destination from the search box.');
       return;
     }
     calculateRoute(originCoords, destinationCoords, waypointCoords);
   };
+
 
   // 5. Waypoint / Intermediate Charging Stop Actions
   const handleAddWaypoint = (station: ChargingStation) => {
@@ -435,19 +433,17 @@ export const SmartNavigationPage: React.FC = () => {
 
         </div>
 
-        {/* Quick Destination Corridor Badges */}
-        <div className="flex items-center flex-wrap gap-2 pt-1 border-t border-slate-800/80 text-xs">
-          <span className="text-[11px] text-slate-400 font-mono uppercase">Quick Hubs:</span>
-          {POPULAR_DESTINATIONS.map((dest) => (
-            <button
-              key={dest.name}
-              type="button"
-              onClick={() => handleSelectQuickDestination(dest)}
-              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[11px] font-medium transition"
-            >
-              {dest.name}
-            </button>
-          ))}
+        {/* Destination Status Strip */}
+        <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-800/80 text-xs">
+          <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            <span>Search any destination worldwide. Road driving route and EV battery envelope are computed from your GPS position.</span>
+          </div>
+          {destinationCoords && (
+            <span className="text-[11px] font-mono text-emerald-400 font-bold">
+              Target: {formatCoordinates(destinationCoords[0], destinationCoords[1])}
+            </span>
+          )}
         </div>
 
         {/* Form Action Buttons */}
@@ -647,6 +643,21 @@ export const SmartNavigationPage: React.FC = () => {
         </div>
       )}
 
+      {/* Guide Banner When No Destination Has Been Calculated */}
+      {!smartRoute && (
+        <div className="glass-panel p-6 rounded-2xl border border-slate-800 text-center space-y-3 shadow-xl bg-gradient-to-b from-[#06151B]/80 to-[#0A1F26]/70 animate-fadeIn">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto">
+            <Navigation className="w-6 h-6" />
+          </div>
+          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+            Search a Destination Above to Calculate EV Driving Route & Energy Requirements
+          </h2>
+          <p className="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed">
+            Enter any city, landmark, or address into the Destination Terminal field. The Intelligent Navigator will compute the road trajectory using OSRM, simulate battery state-of-charge with HVAC buffers, and locate verified corridor fast-charging hubs along the way.
+          </p>
+        </div>
+      )}
+
       {/* Main Map & Charging Stops Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -659,8 +670,8 @@ export const SmartNavigationPage: React.FC = () => {
             destinationLocation={destinationCoords}
             waypointLocation={waypointCoords}
             selectedStationId={selectedStationOnMap?.id || waypointStation?.id}
-            center={originCoords || [37.7749, -122.4194]}
-            zoom={11}
+            center={originCoords || [20.5937, 78.9629]}
+            zoom={originCoords ? 12 : 5}
             onSelectStation={(s) => setSelectedStationOnMap(s)}
             onLocateMe={detectGps}
           />

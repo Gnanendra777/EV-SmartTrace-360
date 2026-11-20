@@ -15,7 +15,7 @@ from app.schemas.routes import (
     GeocodeSearchRequest
 )
 from app.schemas.charging import ChargingStationOut
-from app.security.auth import get_current_user
+from app.security.auth import get_current_user, get_optional_current_user
 from app.services.route_service import optimize_ev_routes
 from app.services.osrm_routing_service import calculate_osrm_route
 from app.services.nominatim_geocoding_service import search_destination_nominatim
@@ -46,10 +46,35 @@ async def geocode_destination_post(req: GeocodeSearchRequest):
     return [GeocodeResultOut(**item) for item in results]
 
 
+@router.get("/directions")
+async def get_directions_route(
+    origin_lat: float = Query(..., ge=-90.0, le=90.0, description="Start latitude"),
+    origin_lng: float = Query(..., ge=-180.0, le=180.0, description="Start longitude"),
+    destination_lat: float = Query(..., ge=-90.0, le=90.0, description="End latitude"),
+    destination_lng: float = Query(..., ge=-180.0, le=180.0, description="End longitude"),
+):
+    """
+    Get quick road driving route between any two GPS coordinates.
+    Directly used for calculating shortest road routes to charging stations.
+    """
+    try:
+        data = await calculate_osrm_route(
+            start_lat=origin_lat,
+            start_lon=origin_lng,
+            end_lat=destination_lat,
+            end_lon=destination_lng
+        )
+        return data
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Could not compute driving route. Please try again.")
+
+
 @router.post("/calculate", response_model=RouteCalculateResponse)
 async def calculate_smart_ev_route(
     req: RouteCalculateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -63,10 +88,13 @@ async def calculate_smart_ev_route(
     soh = 96.0
 
     if req.vehicle_id:
-        vehicle = db.query(Vehicle).filter(
-            Vehicle.id == req.vehicle_id,
-            Vehicle.user_id == current_user.id
-        ).first()
+        if current_user:
+            vehicle = db.query(Vehicle).filter(
+                Vehicle.id == req.vehicle_id,
+                Vehicle.user_id == current_user.id
+            ).first()
+        else:
+            vehicle = db.query(Vehicle).filter(Vehicle.id == req.vehicle_id).first()
         if vehicle:
             battery_cap = float(vehicle.battery_capacity or 60.0)
             eff_kwh_km = float(vehicle.efficiency_kwh_km or 0.150)
@@ -74,13 +102,19 @@ async def calculate_smart_ev_route(
                 current_soc = float(vehicle.current_battery_pct)
 
     # 2. Calculate Road Route with OSRM
-    osrm_data = await calculate_osrm_route(
-        start_lat=req.origin_lat,
-        start_lon=req.origin_lng,
-        end_lat=req.destination_lat,
-        end_lon=req.destination_lng,
-        waypoints=req.waypoints
-    )
+    try:
+        osrm_data = await calculate_osrm_route(
+            start_lat=req.origin_lat,
+            start_lon=req.origin_lng,
+            end_lat=req.destination_lat,
+            end_lon=req.destination_lng,
+            waypoints=req.waypoints
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not compute driving route. Please check coordinates and try again.")
+
 
     distance_km = osrm_data["distance_km"]
     duration_mins = osrm_data["duration_minutes"]
