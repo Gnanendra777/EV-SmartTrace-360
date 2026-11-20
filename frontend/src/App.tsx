@@ -37,7 +37,7 @@ const AppLayout: React.FC = () => {
 
       {/* Demo Mode Announcement Toast Notification */}
       {demoNotification && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-2xl bg-[#071B22]/95 border border-[#20D6C2]/60 shadow-2xl shadow-[#20D6C2]/25 text-xs text-[#20D6C2] font-semibold flex items-center space-x-3 backdrop-blur-md animate-bounce">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-2xl bg-[#071B22]/95 border border-[#20D6C2]/60 shadow-2xl shadow-[#20D6C2]/25 text-xs text-[#20D6C2] font-semibold flex items-center space-x-3 backdrop-blur-md animate-bounce">
           <span className="w-2.5 h-2.5 rounded-full bg-[#20D6C2] animate-ping" />
           <span>{demoNotification}</span>
           <button 

@@ -42,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80">
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-[82px]">
           
           {/* Logo & Tagline */}
           <Link to="/dashboard" className="flex items-center space-x-3 group">

@@ -69,20 +69,12 @@ export const DashboardPage: React.FC = () => {
   const healthScore = stats?.health_score || 88;
 
   return (
-    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-8">
+    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 space-y-5 sm:space-y-6">
       
       {/* Top Cockpit Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              CENTRAL INTELLIGENCE COCKPIT
-            </span>
-            <span className="text-xs text-slate-400">
-              {stats?.vehicle.vehicle_name} ({stats?.vehicle.manufacturer} {stats?.vehicle.model})
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Vehicle Health & Performance Matrix
           </h1>
         </div>
@@ -105,21 +97,14 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Phase 2: Sample EV Datasets Switcher in Demo Mode */}
+      {/* Sample EV Profiles Switcher in Demo Mode */}
       {isDemoMode && (
-        <div className="p-4 rounded-2xl glass-panel border border-cyan-500/30 bg-[#071B22]/70 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center space-x-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
-                DEMO / SIMULATED DATASETS
-              </span>
-              <p className="text-xs text-slate-300">
-                Switch between persistent realistic EV profiles or reset test records.
-              </p>
-            </div>
+        <div className="p-3.5 rounded-2xl glass-panel border border-cyan-500/30 bg-[#071B22]/70 space-y-2.5">
+          <div className="flex items-center justify-end">
             <button
               onClick={resetDemoData}
-              className="self-start sm:self-auto flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] text-cyan-400 font-mono transition"
+              className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] text-cyan-400 font-mono transition"
+              title="Reset Demo Data"
             >
               <RefreshCw className="w-3 h-3" />
               <span>Reset Demo Data</span>
