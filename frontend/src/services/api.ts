@@ -31,6 +31,17 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor to reject HTML responses returned by SPA fallback when backend is unreachable
+apiClient.interceptors.response.use(
+  (response) => {
+    if (typeof response.data === 'string' && (response.data.includes('<!DOCTYPE') || response.data.includes('<html') || response.data.includes('<head'))) {
+      return Promise.reject(new Error('Received HTML SPA fallback instead of JSON'));
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Haversine distance calculator helper
 function calculateHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;

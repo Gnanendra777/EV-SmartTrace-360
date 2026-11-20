@@ -64,9 +64,9 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
-  const soc = stats?.latest_battery.soc || 70;
-  const range = stats?.estimated_range_km || 227.3;
-  const healthScore = stats?.health_score || 88;
+  const soc = stats?.latest_battery?.soc ?? 70;
+  const range = stats?.estimated_range_km ?? 227.3;
+  const healthScore = stats?.health_score ?? 88;
 
   return (
     <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 space-y-5 sm:space-y-6">
@@ -112,7 +112,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {vehicles.filter(v => v.is_demo).map((v) => {
+            {(Array.isArray(vehicles) ? vehicles : []).filter(v => v && v.is_demo).map((v) => {
               const isSelected = activeVehicle?.id === v.id;
               return (
                 <button
@@ -160,7 +160,7 @@ export const DashboardPage: React.FC = () => {
               {soc.toFixed(0)}%
             </span>
             <span className="text-xs text-slate-400">
-              ({stats?.latest_battery.available_energy.toFixed(1)} kWh)
+              ({(stats?.latest_battery?.available_energy ?? 42.0).toFixed(1)} kWh)
             </span>
           </div>
           <div className="mt-3 w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
@@ -170,7 +170,7 @@ export const DashboardPage: React.FC = () => {
             />
           </div>
           <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-            <span>SOH: {stats?.latest_battery.soh}%</span>
+            <span>SOH: {stats?.latest_battery?.soh ?? 95.2}%</span>
             <span className="text-emerald-400">401.5V Nominal</span>
           </div>
         </div>
@@ -310,7 +310,7 @@ export const DashboardPage: React.FC = () => {
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.recent_energy_trend}>
+              <AreaChart data={stats?.recent_energy_trend || []}>
                 <defs>
                   <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#00ff87" stopOpacity={0.4}/>
@@ -356,7 +356,7 @@ export const DashboardPage: React.FC = () => {
             </p>
 
             <div className="space-y-2.5 pt-2">
-              {stats?.upcoming_charging_recommendations.map((rec, i) => (
+              {(stats?.upcoming_charging_recommendations || []).map((rec, i) => (
                 <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-start space-x-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                   <span>{rec}</span>
@@ -404,7 +404,7 @@ export const DashboardPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
-              {stats?.recent_charging_sessions.map((sess) => (
+              {(stats?.recent_charging_sessions || []).map((sess) => (
                 <tr key={sess.id} className="hover:bg-slate-900/40">
                   <td className="py-3 px-3 text-slate-200">{sess.date}</td>
                   <td className="py-3 px-3 text-emerald-400 font-bold">{sess.energy_kwh} kWh</td>

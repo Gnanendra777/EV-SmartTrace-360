@@ -148,7 +148,7 @@ export const ProfilePage: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-400 p-[2px]">
                 <div className="w-full h-full bg-slate-950 rounded-2xl flex items-center justify-center text-xl font-extrabold text-white">
-                  {(user?.name || profileName).charAt(0).toUpperCase()}
+                  {(user?.name || profileName || 'A').charAt(0).toUpperCase()}
                 </div>
               </div>
               <div>

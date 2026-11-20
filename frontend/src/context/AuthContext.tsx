@@ -32,8 +32,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [demoNotification, setDemoNotification] = useState<string | null>(null);
 
+  // Hardcoded demo fallback data when backend is unreachable
+  const DEMO_USER: User = {
+    id: 1,
+    name: 'Alex Rivers',
+    email: 'demo@evsmarttrace.com',
+    phone_number: '+1 (555) 234-5678',
+    account_type: 'Demo',
+    created_at: new Date().toISOString()
+  };
+
+  const DEMO_VEHICLES: Vehicle[] = [
+    {
+      id: 1,
+      user_id: 1,
+      vehicle_name: 'CyberPulse GT (Demo)',
+      manufacturer: 'Tesla',
+      model: 'Model 3 Dual Motor',
+      vehicle_type: 'Sedan',
+      battery_capacity: 60.0,
+      battery_chemistry: 'Lithium Nickel Manganese Cobalt (NMC)',
+      max_charging_power: 170.0,
+      connector_types: 'CCS2, Tesla Supercharger, Type 2',
+      vehicle_identifier: 'EV-ST360-9842-DEMO',
+      current_battery_pct: 70.0,
+      efficiency_kwh_km: 0.150,
+      is_demo: true,
+      created_at: new Date().toISOString()
+    }
+  ];
+
   const initAuth = async () => {
     setIsLoading(true);
+    let userResolved = false;
+    let vehiclesResolved = false;
+
     try {
       let storedToken = localStorage.getItem('ev_token');
       if (!storedToken) {
@@ -44,34 +77,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             storedToken = data.access_token;
             setToken(data.access_token);
             setUser({ id: data.user_id, name: data.name, email: data.email, account_type: 'Demo' });
+            userResolved = true;
           }
         } catch {
-          setUser({
-            id: 1,
-            name: 'Alex Rivers',
-            email: 'demo@evsmarttrace.com',
-            phone_number: '+1 (555) 234-5678',
-            account_type: 'Demo',
-            created_at: new Date().toISOString()
-          });
+          // Backend unreachable – use demo user
         }
       } else {
         setToken(storedToken);
         try {
           const profile = await api.getProfile();
           setUser(profile);
+          userResolved = true;
         } catch {
-          // Keep existing state
+          // Token invalid or backend down
         }
       }
 
-      const vList = await api.getVehicles();
-      setVehicles(vList);
-      if (vList.length > 0) {
-        setActiveVehicle(vList[0]);
+      // Always fall back to demo user if nothing resolved
+      if (!userResolved) {
+        setUser(DEMO_USER);
+        setIsDemoMode(true);
+      }
+
+      try {
+        const vList = await api.getVehicles();
+        if (Array.isArray(vList) && vList.length > 0) {
+          setVehicles(vList);
+          setActiveVehicle(vList[0]);
+          vehiclesResolved = true;
+        }
+      } catch {
+        // Backend unreachable for vehicles
+      }
+
+      // Always fall back to demo vehicles if nothing resolved
+      if (!vehiclesResolved) {
+        setVehicles(DEMO_VEHICLES);
+        setActiveVehicle(DEMO_VEHICLES[0]);
       }
     } catch (e) {
       console.error('Auth initialization error:', e);
+      // Ultimate fallback
+      setUser(DEMO_USER);
+      setVehicles(DEMO_VEHICLES);
+      setActiveVehicle(DEMO_VEHICLES[0]);
+      setIsDemoMode(true);
     } finally {
       setIsLoading(false);
     }
@@ -128,25 +178,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshVehicles = async () => {
     try {
       const vList = await api.getVehicles();
-      setVehicles(vList);
-      if (vList.length > 0) {
+      if (Array.isArray(vList) && vList.length > 0) {
+        setVehicles(vList);
         setActiveVehicle(vList[0]);
+      } else {
+        setVehicles(DEMO_VEHICLES);
+        setActiveVehicle(DEMO_VEHICLES[0]);
       }
     } catch (e) {
       console.error('Failed to load vehicles:', e);
+      setVehicles(DEMO_VEHICLES);
+      setActiveVehicle(DEMO_VEHICLES[0]);
     }
   };
 
   const resetDemoData = async () => {
     try {
       const vList = await api.resetDemoData();
-      setVehicles(vList);
-      if (vList.length > 0) {
+      if (Array.isArray(vList) && vList.length > 0) {
+        setVehicles(vList);
         setActiveVehicle(vList[0]);
+      } else {
+        setVehicles(DEMO_VEHICLES);
+        setActiveVehicle(DEMO_VEHICLES[0]);
       }
     } catch (e) {
       console.error('Reset demo data error:', e);
-      await refreshVehicles();
+      setVehicles(DEMO_VEHICLES);
+      setActiveVehicle(DEMO_VEHICLES[0]);
     }
   };
 

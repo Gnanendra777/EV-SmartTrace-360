@@ -142,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-500 p-[1.5px] hover:scale-105 transition"
               >
                 <div className="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-xs font-bold text-slate-200">
-                  {user ? user.name.charAt(0) : 'A'}
+                  {user?.name ? user.name.charAt(0) : 'A'}
                 </div>
               </button>
 
