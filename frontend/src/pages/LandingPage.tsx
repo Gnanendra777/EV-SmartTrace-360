@@ -2,19 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Zap, 
-  BatteryCharging, 
-  Activity, 
-  ShieldAlert, 
-  MapPin, 
-  Navigation, 
-  Mic, 
-  Cpu, 
   ArrowRight, 
   Sparkles,
-  CheckCircle,
-  Gauge,
-  TrendingUp,
-  Server
+  Gauge
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
@@ -56,7 +46,7 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex-1 flex flex-col justify-center items-center text-center">
+      <section className="relative pt-12 sm:pt-16 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex-1 flex flex-col justify-center items-center text-center">
         
         {/* Glow ambient background effects */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gradient-to-tr from-emerald-500/15 via-cyan-500/10 to-transparent blur-[120px] pointer-events-none rounded-full" />
@@ -120,82 +110,6 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="text-center space-y-2 mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
-            Seven Integrated Intelligence Pillars
-          </h2>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto">
-            Engineered from ground up to solve EV range anxiety, thermal degradation, and highway charging stops.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          <div className="glass-panel p-6 rounded-2xl space-y-3 glass-card-hover border-emerald-500/20">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <BatteryCharging className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white">AI Battery Intelligence</h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Calculates available battery energy (Capacity × SOC / 100) and predicts range with Random Forest ML accounting for speed, payload, temperature, and AC load.
-            </p>
-          </div>
-
-          <div className="glass-panel p-6 rounded-2xl space-y-3 glass-card-hover border-cyan-500/20">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <Activity className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white">Smart Energy & Charging Analytics</h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Tracks metered energy, electricity expenditure, CC-CV taper curves, and flags unusual consumption spikes (+25%) using Isolation Forest anomaly detection.
-            </p>
-          </div>
-
-          <div className="glass-panel p-6 rounded-2xl space-y-3 glass-card-hover border-amber-500/20">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white">AI Vehicle Diagnostics Scanner</h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Interactive "SCAN MY EV" sweep monitors battery temperature, pack voltage, motor stator temps, inverter loop pressure, and 12V auxiliary DC-DC converter.
-            </p>
-          </div>
-
-          <div className="glass-panel p-6 rounded-2xl space-y-3 glass-card-hover border-blue-500/20">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white">Nearby Charging Station Finder</h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Interactive Leaflet maps with station markers, real-time connector filters (CCS2, Type 2, CHAdeMO), charging capacity, operator, and distance.
-            </p>
-          </div>
-
-          <div className="glass-panel p-6 rounded-2xl space-y-3 glass-card-hover border-emerald-500/20">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Navigation className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white">AI Smart Route Optimization</h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Compares Fastest Route, Lowest Energy Eco Route, and Recommended Balanced Route. Automatically inserts needed charging stops with arrival safety buffers.
-            </p>
-          </div>
-
-          <div className="glass-panel p-6 rounded-2xl space-y-3 glass-card-hover border-cyan-500/20">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <Mic className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white">EV SmartVoice Cockpit Assistant</h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Siri-like animated voice assistant with speech recognition, text-to-speech, multilingual support (English, Telugu, Hindi), and proactive voice hazard alerts.
-            </p>
-          </div>
-
-        </div>
       </section>
 
       {/* Footer */}
